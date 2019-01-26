@@ -1,0 +1,26 @@
+<!-- forms/exporter.html.twig -->
+
+
+<form id="exporter" action="{{site.uri.public}}/api/ufexcel/export" method="post">
+  {% include "forms/csrf.html.twig" %}
+
+  <div class="box-body">
+  Select the columns to include in export
+  <br>
+  <br>
+  <input type="hidden" name="table" value="vehicle">
+    {% for column in columns %}
+<div class="row">
+    <label>
+      <input type="checkbox" class="js-icheck" name="columns[]" value="{{column}}" checked> {{column}}
+    </label>
+</div>
+  {% endfor %}
+
+<br>
+
+  <div class="col-xs-4">
+      <button type="submit" class="btn btn-primary btn-block btn-flat">Download</button>
+  </div>
+  </div>
+</form>

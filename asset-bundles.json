@@ -1,0 +1,17 @@
+{
+    "bundle": {
+      "js/widgets/ufexcel": {
+          "scripts": [
+              "js/widgets/ufexcel.js",
+              "userfrosting/js/uf-collection.js"
+          ],
+          "options": {
+              "result": {
+                  "type": {
+                      "scripts": "plain"
+                  }
+              }
+          }
+      }
+   }
+}

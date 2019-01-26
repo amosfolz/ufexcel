@@ -1,0 +1,21 @@
+{
+    "name": "LaravelExcel",
+    "type": "userfrosting-sprinkle",
+    "description": "LaravelExcel Sprinkle",
+    "license" : "MIT",
+    "authors" : [
+        {
+            "name": "Amos Folz"
+        }
+    ],
+      "require": {
+         "phpoffice/phpspreadsheet": ">=1.6.0",
+         "doctrine/dbal": ">=2.9.2"
+      },
+
+    "autoload": {
+        "psr-4": {
+            "UserFrosting\\Sprinkle\\Ufexcel\\": "src/"
+        }
+    }
+}

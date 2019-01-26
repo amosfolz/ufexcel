@@ -1,0 +1,21 @@
+<!-- forms/exporter.html.twig -->
+
+
+<form id="import" action="{{site.uri.public}}/api/ufexcel/import" method="post" enctype="multipart/form-data" data-table="{{table}}">
+  {% include "forms/csrf.html.twig" %}
+
+  <div class="box-body">
+<table>
+<tr><th>Please select the file to upload: </th></tr>
+<tbody>
+      <input type="hidden" name="table" value="{{table}}">
+
+<label>
+      <input type="file" name="importFile" id="importFile">
+</label>
+
+  <div class="col-xs-4">
+      <button type="submit" class="btn btn-primary btn-block btn-flat">Submit</button>
+  </div>
+  </div>
+</form>

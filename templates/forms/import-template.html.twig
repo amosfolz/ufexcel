@@ -1,0 +1,44 @@
+<!-- forms/exporter.html.twig -->
+
+
+<form id="import-template" action="{{site.uri.public}}/api/ufexcel/template" method="post">
+  {% include "forms/csrf.html.twig" %}
+
+  <div class="box-body">
+<table>
+<tr><th>These columns are required and included by default:</th></tr>
+<tbody>
+{% for required in requiredColumns %}
+
+  <tr class="uf-collection-row">
+    <td>
+   {{required}}   <input type="hidden" name="columns[]" value="{{required}}">
+    </td>
+</tr>
+    {% endfor %}
+</tbody>
+</table>
+<table>
+<thead>
+<tr><th> Select additional columns to include in import:</th></tr>
+</thead>
+  <input type="hidden" data-table="{{table}}">
+
+<tbody>
+    {% for column in columns %}
+<tr class="uf-collection-row">
+<td>
+<label>
+      <input type="checkbox" class="js-icheck" name="columns[]" value="{{column}}" checked> {{column}}
+</label>
+</td>
+</tr>
+  {% endfor %}
+</tbody>
+<br>
+</table>
+  <div class="col-xs-4">
+      <button type="submit" class="btn btn-primary btn-block btn-flat">Download</button>
+  </div>
+  </div>
+</form>
