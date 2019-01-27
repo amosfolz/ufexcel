@@ -10,7 +10,8 @@
     ],
       "require": {
          "phpoffice/phpspreadsheet": ">=1.6.0",
-         "doctrine/dbal": ">=2.9.2"
+         "doctrine/dbal": ">=2.9.2",
+         "mpdf/mpdf": "dev-master"
       },
 
     "autoload": {
