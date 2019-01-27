@@ -8,7 +8,8 @@
   Select the columns to include in export
   <br>
   <br>
-  <input type="hidden" name="table" value="vehicle">
+  <input type="hidden" name="table" value="{{table}}">
+  <input type="hidden" name="model" value="{{model}}">
     {% for column in columns %}
 <div class="row">
     <label>

@@ -185,10 +185,11 @@ public function export($request, $response, $args) {
 
 $params = $request->getParsedBodyParam('columns');
 $table = $request->getParsedBodyParam('table');
+$model = $request->getParsedBodyParam('model');
 
 $classMapper = $this->ci->classMapper;
 
-$model = $classMapper->getClassMapping($table);
+$model = $classMapper->getClassMapping($model);
 
 //$model = new Vehicle;
 
@@ -296,9 +297,13 @@ public function getColumns($columns){
 public function getModalExport($request, $response, $args) {
 
     // GET parameters
+    $model = $request->getQueryParam("model");
     $table = $request->getQueryParam("table");
 
-    $columns = $this->getColumns($table);
+
+
+
+    $columns = $this->getColumns($model);
 
     /** @var UserFrosting\Sprinkle\Account\Authorize\AuthorizationManager $authorizer */
     $authorizer = $this->ci->authorizer;
@@ -316,7 +321,9 @@ public function getModalExport($request, $response, $args) {
     }
 */
     return $this->ci->view->render($response, 'modals/exporter.html.twig', [
-        'columns' => $columns
+        'columns' => $columns,
+        'model' => $model,
+        'table' => $table
     ]);
 }
 

@@ -42,12 +42,14 @@ $(document).ready(function() {
 
 $('.js-ufexcel-export').click(function() {
 
-  var table_name = $(this).data('table-name');
+  var table_name = $("table:first").data('table-name');
+  var model = $("table:first").data('model-name');
 
   $("body").ufModal({
   sourceUrl: site.uri.public + "/modals/ufexcel/export",
   ajaxParams: {
-        table : table_name
+        table : table_name,
+        model : model
      },
   msgTarget: $("#alerts-page")
       });
@@ -59,12 +61,14 @@ $('.js-ufexcel-export').click(function() {
 
     $('.js-ufexcel-import-template').click(function() {
 
-      var table_name = $(this).data('table-name');
+      var table_name = $("table:first").data('table-name');
+      var model = $("table:first").data('model-name');
 
       $("body").ufModal({
       sourceUrl: site.uri.public + "/modals/ufexcel/import/template",
       ajaxParams: {
-            table : table_name
+          table : table_name,
+          model : model
          },
       msgTarget: $("#alerts-page")
           });
@@ -75,12 +79,14 @@ $('.js-ufexcel-export').click(function() {
 
     $('.js-ufexcel-import').click(function() {
 
-      var table_name = $(this).data('table-name');
+        var table_name = $("table:first").data('table-name');
+        var model = $("table:first").data('model-name');
 
      $("body").ufModal({
       sourceUrl: site.uri.public + "/modals/ufexcel/import",
       ajaxParams: {
-            table : table_name
+          table : table_name,
+          model : model
          },
       msgTarget: $("#alerts-page")
           });

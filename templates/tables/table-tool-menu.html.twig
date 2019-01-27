@@ -6,14 +6,29 @@
           <i class="fa fa-bars"></i> <span class="caret"></span>
         </button>
         <ul class="dropdown-menu box-tool-menu">
+          <li>
+            <a href="#" class="js-uf-table-export">
+                <i class="fa fa-download fa-fw"></i> Export
+            </a>
+          </li>
             <li>
-              testing menu override
+              <a href="#" class="js-uf-table-import-template">
+                  <i class="fa fa-table fa-fw"></i> Import Template
+              </a>
             </li>
+            <li>
+              <a href="#" class="js-uf-table-import">
+                  <i class="fa fa-upload fa-fw"></i> Import
+              </a>
+            </li>
+{#
+**To include the default CSV export button remove this comment**
             <li>
                 <a href="#" class="js-uf-table-download">
                     <i class="fa fa-table fa-fw"></i> {{ translate("DOWNLOAD.CSV") }}
                 </a>
             </li>
+#}
             <li role="separator" class="divider"></li>
             <li>
                 <div class="uf-table-cs-title">

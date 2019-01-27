@@ -22,8 +22,8 @@
 <thead>
 <tr><th> Select additional columns to include in import:</th></tr>
 </thead>
-  <input type="hidden" data-table="{{table}}">
-
+  <input type="hidden" name="table" value="{{table}}">
+  <input type="hidden" name="model" value="{{model}}">
 <tbody>
     {% for column in columns %}
 <tr class="uf-collection-row">
