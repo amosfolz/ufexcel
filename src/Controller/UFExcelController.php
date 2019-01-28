@@ -21,6 +21,7 @@ use UserFrosting\Sprinkle\Vehicles\Database\Models\Vehicle;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Style;
 
 class UFExcelController extends SimpleController {
 
@@ -45,47 +46,25 @@ $model = $classMapper->getClassMapping($table);
 
 //$table = $classMapper->getClassMapping($request->getParsedBodyParam("table"));
 
-Debug::debug("var table");
-Debug::debug(print_r($table, true));
 
   /** Load $inputFileName to a Spreadsheet Object  **/
-  $spreadsheet = IOFactory::load($uploadedFile->file);
-
+$spreadsheet = IOFactory::load($uploadedFile->file);
 
 $worksheet = $spreadsheet->getActiveSheet();
-//Debug::debug("var worksheet");
-//Debug::debug(print_r($worksheet, true));
-
 
 $rows = $worksheet->toArray();
-Debug::debug("var rows");
-Debug::debug(print_r($rows, true));
+
 
 //Grab the header row so array only contains data
 $keys = array_shift($rows);
-Debug::debug("var dataRows");
-Debug::debug(print_r($dataRows, true));
 
-Debug::debug("var rows after array_shift");
-Debug::debug(print_r($rows, true));
-
+//convert spreadsheet to array
 foreach ($rows as $key => $value){
-  Debug::debug("foreach var key");
-  Debug::debug(print_r($key, true));
-  Debug::debug("foreach var value");
-  Debug::debug(print_r($value, true));
-
-  //  $values =
     $rowsArray[] = array_combine($keys, $value);
-    Debug::debug("var rowsToArray");
-    Debug::debug(print_r($rowsArray, true));
 }
 
 /*
 Capsule::transaction( function() use($rowsArray, $currentUser, $classMapper)  {
-
-
-
    $address = new Address($data);
    $address->longitude = $longitude;
    $address->latitude = $latitude;
@@ -100,11 +79,7 @@ Capsule::transaction( function() use($rowsArray, $currentUser, $classMapper)  {
 
 public function getModalImport ($request, $response, $args) {
 
-  $table = $request->getQueryParams('table-name');
-
-  Debug::debug("getModalImport var table");
-  Debug::debug(print_r($table,true));
-
+//  $table = $request->getQueryParams('table-name');
 
   /** @var UserFrosting\Sprinkle\Account\Authorize\AuthorizationManager $authorizer */
   $authorizer = $this->ci->authorizer;
@@ -128,13 +103,20 @@ public function getModalImport ($request, $response, $args) {
 
 
 public function getModalImportTemplate ($request, $response, $args) {
-
   // GET parameters
+$model = $request->getQueryParam("model");
 $table = $request->getQueryParam("table");
 
-$requiredColumns = $this->getNullableColumns($table);
+  $sm = Capsule::getDoctrineSchemaManager();
+  $tableColumns = $sm->listTableColumns($table);
 
-$columns = array_diff($this->getColumns($table), $requiredColumns);
+
+$columns = $this->getColumns($table);
+//$columns = $this->getColumns($model);
+
+//Remove autoincrementing and required columns from optional list.
+$optionalColumns = array_diff($columns['columns'], $columns['notNullable']);
+$requiredColumns = array_diff($columns['notNullable'], $columns['autoincrementing']);
 
 
   /** @var UserFrosting\Sprinkle\Account\Authorize\AuthorizationManager $authorizer */
@@ -153,7 +135,7 @@ $columns = array_diff($this->getColumns($table), $requiredColumns);
   }
 */
   return $this->ci->view->render($response, 'modals/import-template.html.twig', [
-      'columns' => $columns,
+      'columns' => $optionalColumns,
       'requiredColumns' => $requiredColumns
   ]);
 
@@ -161,6 +143,8 @@ $columns = array_diff($this->getColumns($table), $requiredColumns);
 }
 
 public function getImportTemplate ($request, $response, $args) {
+
+
 
   $params = $request->getParsedBodyParam('columns');
 
@@ -183,101 +167,117 @@ public function getImportTemplate ($request, $response, $args) {
 
 public function export($request, $response, $args) {
 
-$params = $request->getParsedBodyParam('columns');
-$table = $request->getParsedBodyParam('table');
-$model = $request->getParsedBodyParam('model');
+$params = $request->getParsedBody();
 
-$classMapper = $this->ci->classMapper;
+//$columns = $params['columns'];
+$table = $params['table'];
+$model = $params['model'];
+$format = $params['format'];
+$columns = $params['columns'];
 
-$model = $classMapper->getClassMapping($model);
 
-//$model = new Vehicle;
+//grab the data for only the selected columns
+$data = Capsule::table($table)->select($columns)->get();
 
-//select the model columns
-$modelColumns =  $model::select($params)->get();
-
-foreach ($params as $p){
-  $modelColumns->makeVisible($p);
-};
-
-$modelColumns->toArray();
-
-$data = Capsule::table('vehicles')->select($params)->get();
-
-//hack
+//gets data into array
 $array = json_decode(json_encode($data), true);
 
+
+// Spreadsheet style arrays
+$headerStyle = [
+ 'font' => [
+   //set header to bold font
+   'bold' => true,
+ ],
+];
+
+$styleArray = [
+    'font' => [
+        'bold' => false,
+    ],
+    'alignment' => [
+        'horizontal' => Style\Alignment::HORIZONTAL_LEFT,
+    ],
+    'borders' => [
+        'allBorders' => [
+            'borderStyle' => Style\Border::BORDER_THICK,
+        ],
+    ],
+];
+
+
+$spreadsheet = new Spreadsheet();
+$spreadsheet->getActiveSheet()
+->fromArray($columns, null, 'A1')
+->fromArray($array, null,'A2');
+
+$highestRow = $spreadsheet->getActiveSheet()->getHighestRow();
+$highestColumn = $spreadsheet->getActiveSheet()->getHighestColumn();
+
+$spreadsheet->getActiveSheet()->getStyle("A1:".$highestColumn."1")->applyFromArray($headerStyle);
+$spreadsheet->getActiveSheet()->setShowGridlines(false);
+
+
+
+if ($params['format'] == 'xlsx'){
+
+$spreadsheet->getActiveSheet()->getStyle("A2:".$highestColumn.$highestRow)->applyFromArray($styleArray);
+
   header("Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-  header("Content-Disposition: attachment;filename=\"export.xlsx\"");
+  header("Content-Disposition: attachment;filename=\"$table-export.xlsx\"");
   header("Cache-Control: max-age=0");
 
-  $spreadsheet = new Spreadsheet();
-  $spreadsheet->getActiveSheet()
-  ->fromArray($params, NULL, 'A1')
-  ->fromArray($array, NULL,'A2');
-
   $writer = new Xlsx($spreadsheet);
-  $writer->save('php://output');
+}
 
+if ($params['format'] == 'pdf'){
+
+  header("Content-type:application/pdf");
+  header("Content-Disposition:attachment;filename=\"$table-export.pdf\"");
+
+$spreadsheet->getActiveSheet()->getStyle("A2:".$highestColumn.$highestRow)->applyFromArray($styleArray);
+
+//set header row to repeat on each page
+$spreadsheet->getActiveSheet()
+  ->setShowGridlines(true)
+  ->getPageSetup()
+  ->setRowsToRepeatAtTopByStartAndEnd(1,1);
+
+$writer = IOFactory::createWriter($spreadsheet, 'Mpdf');
+}
+
+
+$writer->save('php://output');
 }
 
 
 
 
   // Grabs the appropriate model and returns all available columns for that model.
-  //Exporter
   public function getColumns($table) {
 
 
-      $classMapper = $this->ci->classMapper;
+      $sm = Capsule::getDoctrineSchemaManager();
+      $tableColumns = $sm->listTableColumns($table);
+      Debug::debug("var tableColumns");
+      Debug::debug(print_r($tableColumns, true));
 
-      $model = $classMapper->getClassMapping($table);
+      foreach ($tableColumns as $tableColumn) {
+          $columns['columns'][] = $tableColumn->getName();
 
-      $newModel = new $model;
+          if($tableColumn->getNotnull() == 1){
+            $columns['notNullable'][] = $tableColumn->getName();
+          }
+          if($tableColumn->getAutoincrement() == 1){
+            $columns['autoincrementing'][] = $tableColumn->getName();
+          }
 
-      $columns = $newModel->getTableColumns();
+      };
 
   return $columns;
   }
 
-  // Grabs the appropriate model and returns all available columns for that model.
-  //Exporter
-  public function getNullableColumns($table) {
 
-
-      $classMapper = $this->ci->classMapper;
-
-      $model = $classMapper->getClassMapping($table);
-
-      $newModel = new $model;
-
-      $nullableColumns = $newModel->getNullable();
-
-  return $nullableColumns;
-  }
-
-
-
-/*
-// Accepts an array of model and columns to be included in export
-public function getColumns($columns){
-
-  $columns = $model->getTableColumns();
-
-  $addresses = Address::all()
-    ->makeVisible('latitude')
-    ->makeVisible('longitude')
-    ->makeHidden('created_at')
-    ->makeHidden('updated_at')
-    ->toArray();
-
-
-  Debug::debug(print_r($addresses, true));
-
-
-}
-
-*/
 
 
 /**
@@ -289,11 +289,6 @@ public function getColumns($columns){
  */
 
 
-
-
-
-
-
 public function getModalExport($request, $response, $args) {
 
     // GET parameters
@@ -303,7 +298,11 @@ public function getModalExport($request, $response, $args) {
 
 
 
-    $columns = $this->getColumns($model);
+    $columns = $this->getColumns($table);
+
+
+  Debug::debug("var columns");
+  Debug::debug(print_r($columns, true));
 
     /** @var UserFrosting\Sprinkle\Account\Authorize\AuthorizationManager $authorizer */
     $authorizer = $this->ci->authorizer;
@@ -320,8 +319,9 @@ public function getModalExport($request, $response, $args) {
         throw new ForbiddenException();
     }
 */
-    return $this->ci->view->render($response, 'modals/exporter.html.twig', [
-        'columns' => $columns,
+    return $this->ci->view->render($response, 'modals/export.html.twig', [
+        'columns' => $columns['columns'],
+        'notNullable' => $columns['notNullable'],
         'model' => $model,
         'table' => $table
     ]);

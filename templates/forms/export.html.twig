@@ -1,26 +1,23 @@
-<!-- forms/import-template.html.twig -->
 
 
-<form id="import-template" action="{{site.uri.public}}/api/ufexcel/template" method="post">
+<!-- forms/export.html.twig -->
+<form id="export" action="{{site.uri.public}}/api/ufexcel/export" method="post">
   {% include "forms/csrf.html.twig" %}
 
   <div class="box-body">
 <table>
-<tr><th>These columns are required and included by default:</th></tr>
-<tbody>
+<tr><th>
+  Select a format <select name="format">
+  <option value="pdf">PDF</option>
+  <option value="csv">CSV</option>
+  <option value="xlsx">XLSX</option>
+</select>
+</th></tr>
 
-{% for required in requiredColumns %}
-  <tr class="uf-collection-row">
-    <td>
-   {{required}}   <input type="hidden" name="columns[]" value="{{required}}">
-    </td>
-</tr>
-    {% endfor %}
-</tbody>
 </table>
 <table>
 <thead>
-<tr><th> Select additional columns to include in import:</th></tr>
+<tr><th> Select which columns to include in export</th></tr>
 </thead>
   <input type="hidden" name="table" value="{{table}}">
   <input type="hidden" name="model" value="{{model}}">
