@@ -1,51 +1,108 @@
 <?php
 namespace UserFrosting\Sprinkle\Ufexcel\Database\Migrations\v400;
 
+
+
+use UserFrosting\System\Bakery\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Database\Schema\Builder;
 use UserFrosting\Sprinkle\Account\Database\Models\Permission;
 use UserFrosting\Sprinkle\Account\Database\Models\Role;
-use UserFrosting\System\Bakery\Migration;
 
+/**
+ * Migration for default UfExcel permissions
+ */
 class UfexcelPermissions extends Migration
 {
     public $dependencies = [
         '\UserFrosting\Sprinkle\Account\Database\Migrations\v400\PermissionsTable',
-        '\UserFrosting\Sprinkle\Account\Database\Migrations\v400\RolesTable'
+        '\UserFrosting\Sprinkle\Account\Database\Migrations\v400\RolesTable',
+        '\UserFrosting\Sprinkle\Ufexcel\Database\Migrations\v400\UfExcelRoles'
     ];
 
-    public function seed()
-    {
-        // Add default permissions
-        $permissions = [
-            'export_data' => new Permission([
-                'slug' => 'export_data',
-                'name' => 'Export data',
-                'conditions' => 'always()',
-                'description' => 'View a page containing a list of members.'
-            ]),
-            'import_data' => new Permission([
-                'slug' => 'import_data',
-                'name' => 'Import data',
-                'conditions' => 'always()',
-                'description' => 'View a full list of owls in the system.'
-            ])
-        ];
 
-        foreach ($permissions as $id => $permission) {
-            $slug = $permission->slug;
-            $conditions = $permission->conditions;
-            // Skip if a permission with the same slug and conditions has already been added
-            if (!Permission::where('slug', $slug)->where('conditions', $conditions)->first()) {
-                $permission->save();
+    public function up()
+    {
+        // Get and save permissions
+        $permissions = $this->getPermissions();
+        $this->savePermissions($permissions);
+        // Add default mappings to permissions
+        $this->syncPermissionsRole($permissions);
+    }
+
+
+
+        /**
+         * {@inheritDoc}
+         */
+        public function down()
+        {
+            foreach ($this->getPermissions() as $permissionInfo) {
+                $permission = Permission::where($permissionInfo)->first();
+                $permission->delete();
             }
         }
 
-        // Automatically add permissions to particular roles
-        $roleAdmin = Role::where('slug', 'site-admin')->first();
-        if ($roleAdmin) {
-            $roleAdmin->permissions()->syncWithoutDetaching([
-                $permissions['uri_members']->id,
-                $permissions['uri_owls']->id
-            ]);
-        }
-    }
-}
+
+        /**
+           * @return array Permissions to seed
+           */
+          protected function getPermissions()
+          {
+              $defaultRoleIds = [
+                  'import'      => Role::where('slug', 'import')->first()->id,
+                  'export'      => Role::where('slug', 'export')->first()->id
+              ];
+              return [
+                  'import_data' => new Permission([
+                      'slug'        => 'import_data',
+                      'name'        => 'Import data',
+                      'conditions'  => 'always()',
+                      'description' => 'Import data into database using UfExcel Import.'
+                  ]),
+                  'export_data' => new Permission([
+                      'slug'        => 'export_data',
+                      'name'        => 'Export data',
+                      'conditions'  => 'always()',
+                      'description' => 'Export data from database using UfExcel Export.'
+                  ])
+              ];
+          }
+          /**
+           * Save permissions
+           * @param array $permissions
+           */
+          protected function savePermissions(array $permissions)
+          {
+              foreach ($permissions as $slug => $permission) {
+                  // Trying to find if the permission already exist
+                  $existingPermission = Permission::where(['slug' => $permission->slug, 'conditions' => $permission->conditions])->first();
+                  // Don't save if already exist, use existing permission reference
+                  // otherwise to re-sync permissions and roles
+                  if ($existingPermission == null) {
+                      $permission->save();
+                  } else {
+                      $permissions[$slug] = $existingPermission;
+                  }
+              }
+          }
+          /**
+           * Sync permissions with default roles
+           * @param array $permissions
+           */
+          protected function syncPermissionsRole(array $permissions)
+          {
+              $roleImport = Role::where('slug', 'import_data')->first();
+              if ($roleUser) {
+                  $roleUser->permissions()->sync([
+                      $permissions['import_data']->id
+                  ]);
+              }
+              $roleExport = Role::where('slug', 'export_data')->first();
+              if ($roleExport) {
+                  $roleSiteAdmin->permissions()->sync([
+                      $permissions['export_data']->id
+                  ]);
+              }
+          }
+      }

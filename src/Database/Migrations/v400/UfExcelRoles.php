@@ -1,18 +1,28 @@
 <?php
+namespace UserFrosting\Sprinkle\Ufexcel\Database\Migrations\v400;
 
 
-namespace UserFrosting\Sprinkle\Ufexcel\Database\Seeds;
-use UserFrosting\Sprinkle\Core\Database\Seeder\SeedInterface;
+use UserFrosting\System\Bakery\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Database\Schema\Builder;
 use UserFrosting\Sprinkle\Account\Database\Models\Role;
+
+
 /**
- * Seeder for the default roles
+ * Migration for default UfExcel roles
  */
-class UfExcelRoles implements SeedInterface
+class UfExcelRoles extends Migration
 {
+
+  public $dependencies = [
+      '\UserFrosting\Sprinkle\Account\Database\Migrations\v400\PermissionsTable',
+      '\UserFrosting\Sprinkle\Account\Database\Migrations\v400\RolesTable'
+  ];
+
     /**
      * {@inheritdoc}
      */
-    public function run()
+    public function up()
     {
         $roles = $this->getRoles();
         foreach ($roles as $role) {
@@ -22,6 +32,21 @@ class UfExcelRoles implements SeedInterface
             }
         }
     }
+
+    public function down()
+    {
+        $roles = $this->getRoles();
+        foreach ($roles as $role) {
+            // Don't save if already exist
+            if (Role::where('slug', $role->slug)->first() == null) {
+                $role->delete();
+            }
+        }
+    }
+
+
+
+
     /**
      * @return array Roles to seed
      */
