@@ -38,7 +38,7 @@ class UfexcelPermissions extends Migration
         public function down()
         {
             foreach ($this->getPermissions() as $permissionInfo) {
-                $permission = Permission::where($permissionInfo)->first();
+                $permission = Permission::where('slug', $permissionInfo['slug'])->first();
                 $permission->delete();
             }
         }
