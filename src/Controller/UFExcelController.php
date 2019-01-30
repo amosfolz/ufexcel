@@ -30,6 +30,19 @@ class UFExcelController extends SimpleController {
 
 public function import ($request, $response, $args) {
 
+
+  /** @var UserFrosting\Sprinkle\Account\Authorize\AuthorizationManager */
+  $authorizer = $this->ci->authorizer;
+
+  /** @var UserFrosting\Sprinkle\Account\Database\Models\User $currentUser */
+  $currentUser = $this->ci->currentUser;
+
+  // Access-controlled page
+  if (!$authorizer->checkAccess($currentUser, 'import_data')) {
+      throw new ForbiddenException();
+  }
+
+
 $uploadedFiles = $request->getUploadedFiles();
 $uploadedFile = $uploadedFiles['importFile'];
 
@@ -38,12 +51,10 @@ $classMapper = $this->ci->classMapper;
 $currentUser = $this->ci->currentUser;
 
 // POST parameters
-
-
 $table = $request->getParsedBodyParam('table');
-$model = $classMapper->getClassMapping($table);
 
-
+Debug::debug("var table");
+Debug::debug(print_r($table, true));
 
 //$table = $classMapper->getClassMapping($request->getParsedBodyParam("table"));
 
@@ -61,26 +72,34 @@ $keys = array_shift($rows);
 
 //convert spreadsheet to array
 foreach ($rows as $key => $value){
-    $rowsArray[] = array_combine($keys, $value);
+
+    //data to be inserted
+    $data[] = array_combine($keys, $value);
 }
 
-/*
-Capsule::transaction( function() use($rowsArray, $currentUser, $classMapper)  {
-   $address = new Address($data);
-   $address->longitude = $longitude;
-   $address->latitude = $latitude;
-   $address->location = (array($longitude,$latitude));
-   $currentUser->addresses()->save($address);
 
+
+Capsule::transaction(function () use($data, $currentUser, $table) {
+
+foreach($data as $array => $row){
+    Capsule::table($table)->insert($row);
+
+}
+
+    $this->ci->userActivityLogger->info("User {$currentUser->user_name} created a new account for {$user->user_name}.", [
+        'type' => 'account_create',
+        'user_id' => $currentUser->id
+    ]);
 });
-*/
+
+
 
 }
 
 
 public function getModalImport ($request, $response, $args) {
 
-//  $table = $request->getQueryParams('table-name');
+  $table = $request->getQueryParam('table');
 
   /** @var UserFrosting\Sprinkle\Account\Authorize\AuthorizationManager $authorizer */
   $authorizer = $this->ci->authorizer;
@@ -97,7 +116,9 @@ public function getModalImport ($request, $response, $args) {
       throw new ForbiddenException();
   }
 */
-  return $this->ci->view->render($response, 'modals/import.html.twig');
+  return $this->ci->view->render($response, 'modals/import.html.twig', [
+      'table' => $table
+  ]);
 
 }
 
@@ -105,8 +126,8 @@ public function getModalImport ($request, $response, $args) {
 
 public function getModalImportTemplate ($request, $response, $args) {
   // GET parameters
-$model = $request->getQueryParam("model");
-$table = $request->getQueryParam("table");
+$model = $request->getQueryParam('model');
+$table = $request->getQueryParam('table');
 
   $sm = Capsule::getDoctrineSchemaManager();
   $tableColumns = $sm->listTableColumns($table);
@@ -137,7 +158,8 @@ $requiredColumns = array_diff($columns['notNullable'], $columns['autoincrementin
 */
   return $this->ci->view->render($response, 'modals/import-template.html.twig', [
       'columns' => $optionalColumns,
-      'requiredColumns' => $requiredColumns
+      'requiredColumns' => $requiredColumns,
+      'table' => $table
   ]);
 
 
@@ -167,6 +189,18 @@ public function getImportTemplate ($request, $response, $args) {
 
 
 public function export($request, $response, $args) {
+
+
+  /** @var UserFrosting\Sprinkle\Account\Authorize\AuthorizationManager */
+  $authorizer = $this->ci->authorizer;
+
+  /** @var UserFrosting\Sprinkle\Account\Database\Models\User $currentUser */
+  $currentUser = $this->ci->currentUser;
+
+  // Access-controlled page
+  if (!$authorizer->checkAccess($currentUser, 'export_data')) {
+      throw new ForbiddenException();
+  }
 
 $params = $request->getParsedBody();
 
