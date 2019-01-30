@@ -6,11 +6,16 @@
           <i class="fa fa-bars"></i> <span class="caret"></span>
         </button>
         <ul class="dropdown-menu box-tool-menu">
+
+{% block ufexcel-buttons %}
+{% if checkAccess('export_data') %}
           <li>
             <a href="#" class="js-ufexcel-export">
                 <i class="fa fa-download fa-fw"></i> Export
             </a>
           </li>
+{% endif %}
+{% if checkAccess('import_data') %}
             <li>
               <a href="#" class="js-ufexcel-import-template">
                   <i class="fa fa-table fa-fw"></i> Import Template
@@ -21,14 +26,13 @@
                   <i class="fa fa-upload fa-fw"></i> Import
               </a>
             </li>
-{#
-***To include the default CSV export button remove this comment**
+{% endif %}
             <li>
                 <a href="#" class="js-uf-table-download">
                     <i class="fa fa-table fa-fw"></i> {{ translate("DOWNLOAD.CSV") }}
                 </a>
             </li>
-#}
+
             <li role="separator" class="divider"></li>
             <li>
                 <div class="uf-table-cs-title">

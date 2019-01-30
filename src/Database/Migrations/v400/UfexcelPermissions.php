@@ -12,7 +12,7 @@ use UserFrosting\Sprinkle\Account\Database\Models\Role;
 /**
  * Migration for default UfExcel permissions
  */
-class UfexcelPermissions extends Migration
+class UfExcelPermissions extends Migration
 {
     public $dependencies = [
         '\UserFrosting\Sprinkle\Account\Database\Migrations\v400\PermissionsTable',
@@ -72,7 +72,7 @@ class UfexcelPermissions extends Migration
            * Save permissions
            * @param array $permissions
            */
-          protected function savePermissions(array $permissions)
+          protected function savePermissions($permissions)
           {
               foreach ($permissions as $slug => $permission) {
                   // Trying to find if the permission already exist
@@ -90,17 +90,17 @@ class UfexcelPermissions extends Migration
            * Sync permissions with default roles
            * @param array $permissions
            */
-          protected function syncPermissionsRole(array $permissions)
+          protected function syncPermissionsRole($permissions)
           {
-              $roleImport = Role::where('slug', 'import_data')->first();
-              if ($roleUser) {
-                  $roleUser->permissions()->sync([
+              $roleImport = Role::where('slug', 'import')->first();
+              if ($roleImport) {
+                  $roleImport->permissions()->sync([
                       $permissions['import_data']->id
                   ]);
               }
-              $roleExport = Role::where('slug', 'export_data')->first();
+              $roleExport = Role::where('slug', 'export')->first();
               if ($roleExport) {
-                  $roleSiteAdmin->permissions()->sync([
+                  $roleExport->permissions()->sync([
                       $permissions['export_data']->id
                   ]);
               }

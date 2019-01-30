@@ -8,16 +8,21 @@
 <table>
 <tr><th>
   Select a format <select name="format">
-  <option value="pdf">PDF</option>
-  <option value="csv">CSV</option>
-  <option value="xlsx">XLSX</option>
+  <option value="xlsx">Xlsx</option>
+  <option value="pdf">Pdf</option>
+  <option value="html">Html</option>
+
 </select>
 </th></tr>
-
+<th><tr>
+<label>
+  <input type="checkbox" class="js-icheck" name="borders" value="true" checked> Borders
+</label>
+</tr></th>
 </table>
 <table>
 <thead>
-<tr><th> Select which columns to include in export</th></tr>
+<tr><th> Select columns to include</th></tr>
 </thead>
   <input type="hidden" name="table" value="{{table}}">
   <input type="hidden" name="model" value="{{model}}">
@@ -29,6 +34,7 @@
       <input type="checkbox" class="js-icheck" name="columns[]" value="{{column}}" checked> {{column}}
 </label>
 </td>
+
 </tr>
   {% endfor %}
 </tbody>

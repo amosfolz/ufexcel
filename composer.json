@@ -1,7 +1,7 @@
 {
     "name": "ufexcel",
     "type": "userfrosting-sprinkle",
-    "description": "LaravelExcel Sprinkle",
+    "description": "UfExcel Sprinkle",
     "license" : "MIT",
     "authors" : [
         {
@@ -11,9 +11,7 @@
       "require": {
          "phpoffice/phpspreadsheet": ">=1.6.0",
          "doctrine/dbal": ">=2.9.2",
-         "mpdf/mpdf": "^7.1",
-        "dompdf/dompdf": "^0.8.3",
-        "tecnickcom/tcpdf": "~5.7.4a"
+         "mpdf/mpdf": "^7.1"
       },
 
     "autoload": {

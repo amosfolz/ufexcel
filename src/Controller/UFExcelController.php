@@ -20,6 +20,7 @@ use UserFrosting\Sprinkle\Address\Database\Models\Address;
 use UserFrosting\Sprinkle\Vehicles\Database\Models\Vehicle;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Writer\Html;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Style;
 
@@ -191,6 +192,8 @@ $headerStyle = [
  ],
 ];
 
+
+  if($params['borders'] == "true"){
 $styleArray = [
     'font' => [
         'bold' => false,
@@ -204,6 +207,17 @@ $styleArray = [
         ],
     ],
 ];
+}
+
+else{$styleArray = [
+    'font' => [
+        'bold' => false,
+    ],
+    'alignment' => [
+        'horizontal' => Style\Alignment::HORIZONTAL_LEFT,
+    ]
+  ];
+};
 
 
 $spreadsheet = new Spreadsheet();
@@ -245,6 +259,29 @@ $spreadsheet->getActiveSheet()
 
 $writer = IOFactory::createWriter($spreadsheet, 'Mpdf');
 }
+
+
+if ($params['format'] == 'html'){
+
+  header("Content-type:test/html");
+  header("Content-Disposition:attachment;filename=\"$table-export.htm\"");
+
+$spreadsheet->getActiveSheet()->getStyle("A2:".$highestColumn.$highestRow)->applyFromArray($styleArray);
+
+//set header row to repeat on each page
+$spreadsheet->getActiveSheet()
+  ->setShowGridlines(true)
+  ->getPageSetup()
+  ->setRowsToRepeatAtTopByStartAndEnd(1,1);
+
+$writer = new Html($spreadsheet);
+
+
+
+}
+
+
+
 
 
 $writer->save('php://output');
