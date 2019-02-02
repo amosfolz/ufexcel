@@ -31,6 +31,20 @@ class UFExcelController extends SimpleController {
 public function import ($request, $response, $args) {
 
 
+
+  // POST parameters
+  $tableId = $request->getParsedBodyParam('table');
+
+  Debug::Debug("var tableId");
+  Debug::debug(print_r($tableId, true));
+
+/*
+*
+* 1. Check if user is authorized to import.
+* 2. Check if table has 'import' set under 'hidden', in which case import should not be allowed on this table.
+*/
+
+
   /** @var UserFrosting\Sprinkle\Account\Authorize\AuthorizationManager */
   $authorizer = $this->ci->authorizer;
 
@@ -42,64 +56,87 @@ public function import ($request, $response, $args) {
       throw new ForbiddenException();
   }
 
+/*
+* Get the site.ufexcel config
+*/
+
+$ufexcelConfig = $this->ci->config['site.ufexcel'];
+
+Debug::debug("var config");
+Debug::debug(print_r($ufexcelConfig, true));
+
+
+if (!array_key_exists($tableId, $ufexcelConfig)){
+   throw new ForbiddenException();
+}
+else {
+  $table = $ufexcelConfig[$tableId]['table'];
+  Debug::debug("var table");
+  Debug::debug(print_r($table, true));
+}
+
+
 
 $uploadedFiles = $request->getUploadedFiles();
 $uploadedFile = $uploadedFiles['importFile'];
 
 $classMapper = $this->ci->classMapper;
 
-$currentUser = $this->ci->currentUser;
 
-// POST parameters
-$table = $request->getParsedBodyParam('table');
-
-Debug::debug("var table");
-Debug::debug(print_r($table, true));
-
-//$table = $classMapper->getClassMapping($request->getParsedBodyParam("table"));
-
-
-  /** Load $inputFileName to a Spreadsheet Object  **/
+  /** Load $uploadedFile to a Spreadsheet Object  **/
 $spreadsheet = IOFactory::load($uploadedFile->file);
 
 $worksheet = $spreadsheet->getActiveSheet();
 
 $rows = $worksheet->toArray();
 
-
 //Grab the header row so array only contains data
-$keys = array_shift($rows);
+$columns = array_shift($rows);
 
 //convert spreadsheet to array
 foreach ($rows as $key => $value){
 
-    //data to be inserted
-    $data[] = array_combine($keys, $value);
+    //Add column names as keys for each row to be inserted.
+    $data[] = array_combine($columns, $value);
 }
 
 
+Capsule::beginTransaction();
 
-Capsule::transaction(function () use($data, $currentUser, $table) {
+try {
+  $count = 0;
 
-foreach($data as $array => $row){
-    Capsule::table($table)->insert($row);
-
+  foreach($data as $array => $row){
+    $count = $count + 1;
+    Debug::debug("var inserts");
+    Debug::debug(print_r($inserts,true));
+      Capsule::table($table)->insert($row);
+      Capsule::commit();
+  }
+    $ms = $this->ci->alerts;
+    $ms->addMessage('success', ('Successfully inserted ' . $count . ' records into table: ' . $table));
 }
 
-    $this->ci->userActivityLogger->info("User {$currentUser->user_name} created a new account for {$user->user_name}.", [
-        'type' => 'account_create',
-        'user_id' => $currentUser->id
-    ]);
-});
+catch (\Exception $e) {
+    Capsule::rollback();
 
+/*
+* For now we can at least provide the row # where error occured.
+*/
+    $error = $count + 1;
 
-
+      $ms = $this->ci->alerts;
+      $ms->addMessage('warning', 'Error at row: ' . $error . '  Please check your file and try again.');
+    }
 }
 
 
 public function getModalImport ($request, $response, $args) {
 
   $table = $request->getQueryParam('table');
+
+Debug::debug("var table is");
+Debug::debug(print_r($table,true));
 
   /** @var UserFrosting\Sprinkle\Account\Authorize\AuthorizationManager $authorizer */
   $authorizer = $this->ci->authorizer;
