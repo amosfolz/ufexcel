@@ -1,0 +1,16 @@
+
+{% extends "@admin/pages/groups.html.twig" %}
+
+{% block stylesheets_page %}
+{{ parent() }}
+
+    {{ assets.css('css/ufexcel') | raw }}
+{% endblock %}
+
+
+{% block scripts_page %}
+{{ parent() }}
+
+{# Add ufexcel widget #}
+    {{ assets.js('js/widgets/ufexcel') | raw }}
+{% endblock %}
