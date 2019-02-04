@@ -8,7 +8,6 @@
 <table>
 <tr><th>These columns are required and included by default:</th></tr>
 <tbody>
-
 {% for required in requiredColumns %}
   <tr class="uf-collection-row">
     <td>
@@ -20,10 +19,9 @@
 </table>
 <table>
 <thead>
-<tr><th> Select additional columns to include in import:</th></tr>
+<tr><th> Select additional columns to include in template:</th></tr>
 </thead>
   <input type="hidden" name="table" value="{{table}}">
-  <input type="hidden" name="model" value="{{model}}">
 <tbody>
     {% for column in columns %}
 <tr class="uf-collection-row">
@@ -37,8 +35,13 @@
 </tbody>
 <br>
 </table>
-  <div class="col-xs-4">
-      <button type="submit" class="btn btn-primary btn-block btn-flat">Download</button>
+<div class="row">
+  <div class="col-xs-6">
+      <button type="submit" class="btn btn-primary btn-block btn-flat">Generate</button>
   </div>
+  <div class="col-xs-4">
+    <button type="button" class="btn btn-block btn-lg btn-link" data-dismiss="modal">{{translate("CANCEL")}}</button>
+  </div>
+</div>
   </div>
 </form>
