@@ -92,9 +92,21 @@ This would hide the `export` option for the specified table.
 
 
 #### Permissions/Roles
-ufexcel adds two permissions and two roles. 
+ufexcel adds two permissions and two roles to grant those permissions. 
 * `Import` - allows user to import data as well as use the `template generator`. 
 * `Export` - allows user to export data.
 Note the `Export` permission does not impact the default "Download" User Frosting feature. ufexcel is not restricted by constraints setup in your Eloquent `model`, so take this into consideration when granting access to this feature. 
+
+
+
+
+
+
+
+
+
+
+
+
 
 
