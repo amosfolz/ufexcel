@@ -18,7 +18,6 @@ Userfrosting 4 Sprinkle to import/export data.
         "account",
         "admin",
         "ufexcel"
-
     ]
-    ```
+```
 3. Run `composer update` then `php bakery bake` to install the sprinkle.
