@@ -5,18 +5,11 @@
           <i class="fa fa-bars"></i> <span class="caret"></span>
         </button>
         <ul class="dropdown-menu box-tool-menu">
-{% block ufexcel-buttons %}
-{% if checkAccess('export_data') %}
-          <li class='ufexcel-export'>
-            <a href="#" class="js-ufexcel-export">
-                <i class="fa fa-download fa-fw"></i> Export
-            </a>
-          </li>
-{% endif %}
+{% block ufexcel_buttons %}
 {% if checkAccess('import_data') %}
             <li class='ufexcel-import'>
               <a href="#" class="js-ufexcel-import-template">
-                  <i class="fa fa-table fa-fw"></i> Import Template
+                  <i class="fa fa-table fa-fw"></i> Generate Template
               </a>
             </li>
             <li class='ufexcel-template'>
@@ -24,6 +17,13 @@
                   <i class="fa fa-upload fa-fw"></i> Import
               </a>
             </li>
+{% endif %}
+{% if checkAccess('export_data') %}
+          <li class='ufexcel-export'>
+            <a href="#" class="js-ufexcel-export">
+                <i class="fa fa-download fa-fw"></i> Export
+            </a>
+          </li>
 {% endif %}
             <li>
                 <a href="#" class="js-uf-table-download">
@@ -36,9 +36,9 @@
                     {{translate('TOGGLE_COLUMNS')}}:
                 </div>
                 <div class="uf-table-cs-options js-uf-table-cs-options">
-
                 </div>
             </li>
+{% endblock %}
         </ul>
     </div>
 </div>

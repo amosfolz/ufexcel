@@ -3,17 +3,17 @@
 
 <form class="js-form" id="import" action="{{site.uri.public}}/api/ufexcel/import" method="post" enctype="multipart/form-data">
   {% include "forms/csrf.html.twig" %}
-
+  <input type="hidden" name="table" value="{{table}}">
   <div class="box-body">
-<table>
-<tr><th>Please select the file to upload: </th></tr>
-<tbody>
-      <input type="hidden" name="table" value="{{table}}">
-<label>
-      <input type="file" name="importFile" id="importFile">
-</label>
 <div class="row">
-  <div class="col-xs-4">
+  <div class="col-xs-8">
+    <label>
+        <input type="file" name="importFile" id="importFile">
+    </label>
+  </div>
+</div>
+<div class="row">
+  <div class="col-xs-6">
       <button type="submit" class="btn btn-primary btn-block btn-flat">Submit</button>
   </div>
   <div class="col-xs-4">
