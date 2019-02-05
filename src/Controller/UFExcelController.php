@@ -162,12 +162,18 @@ class UFExcelController extends SimpleController
     public function getModalImportTemplate($request, $response, $args)
     {
         // GET parameters
-        $model = $request->getQueryParam('model');
-        $table = $request->getQueryParam('table');
 
+
+//        $model = $request->getQueryParam('model');
+        $tableId = $request->getQueryParam('table');
+
+
+        $settings = $this->checkConfig($tableId);
+        $table = $settings['table'];
+/*
         $sm = Capsule::getDoctrineSchemaManager();
         $tableColumns = $sm->listTableColumns($table);
-
+  */        
 
         $columns = $this->getColumns($table);
         //$columns = $this->getColumns($model);
@@ -238,19 +244,12 @@ class UFExcelController extends SimpleController
 
         $params = $request->getParsedBody();
 
-        Debug::debug("var params");
-        Debug::debug(print_r($params,true));
-
         $tableId = $params['table'];
         $format = $params['format'];
         $columns = $params['columns'];
 
-
         $settings = $this->checkConfig($tableId);
         $table = $settings['table'];
-
-        Debug::debug("var settings");
-        Debug::debug(print_r($settings,true));
 
         //grab the data for only the selected columns
         $data = Capsule::table($table)->select($columns)->get();
@@ -314,7 +313,6 @@ class UFExcelController extends SimpleController
             header("Cache-Control: max-age=0");
 
             $writer = new Xlsx($spreadsheet);
-            $writer->save('php://output');
         }
 
         if ($format == 'pdf') {
@@ -330,7 +328,6 @@ class UFExcelController extends SimpleController
   ->setRowsToRepeatAtTopByStartAndEnd(1, 1);
 
             $writer = IOFactory::createWriter($spreadsheet, 'Mpdf');
-            $writer->save('php://output');
         }
 
 
@@ -347,9 +344,9 @@ class UFExcelController extends SimpleController
   ->setRowsToRepeatAtTopByStartAndEnd(1, 1);
 
             $writer = new Html($spreadsheet);
-            $writer->save('php://output');
-        }
 
+        }
+            $writer->save('php://output');
 
     }
 
