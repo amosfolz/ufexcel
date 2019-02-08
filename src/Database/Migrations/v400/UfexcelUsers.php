@@ -18,9 +18,6 @@ use UserFrosting\System\Bakery\Migration;
  */
 class UfexcelUsers extends Migration
 {
-  public $dependencies = [
-      '\UserFrosting\Sprinkle\Account\Database\Migrations\v400\UsersTable'
-  ];
     /**
      * {@inheritDoc}
      */

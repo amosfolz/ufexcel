@@ -11,7 +11,7 @@ use UserFrosting\Sprinkle\Account\Database\Models\Role;
 /**
  * Migration for default UfExcel roles
  */
-class UfexcelRoles extends Migration
+class UfExcelRoles extends Migration
 {
 
   public $dependencies = [
