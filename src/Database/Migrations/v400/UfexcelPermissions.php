@@ -17,7 +17,7 @@ class UfExcelPermissions extends Migration
     public $dependencies = [
         '\UserFrosting\Sprinkle\Account\Database\Migrations\v400\PermissionsTable',
         '\UserFrosting\Sprinkle\Account\Database\Migrations\v400\RolesTable',
-        '\UserFrosting\Sprinkle\Ufexcel\Database\Migrations\v400\UfExcelRoles'
+        '\UserFrosting\Sprinkle\Ufexcel\Database\Migrations\v400\UfexcelRoles'
     ];
 
 

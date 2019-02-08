@@ -1,0 +1,6 @@
+# Ignore Composer vendor
+/vendor
+
+# Ignore composer-generated files
+composer.lock
+composer.phar
