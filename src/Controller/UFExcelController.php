@@ -26,6 +26,56 @@ use PhpOffice\PhpSpreadsheet\Style;
 class UFExcelController extends SimpleController
 {
 
+/**
+*      This methods accepts id attribute of table and returns the ufexcel configuration.
+*      If the table id is not found it is assumed the table should not be used with ufexcel
+*      and returns ForbiddenException
+**/
+
+/**
+ * The main ufexcel config page
+ * This page requires authentication.
+ * Request type: GET
+ */
+public function pageList($request, $response, $args)
+{
+    /** @var UserFrosting\Sprinkle\Account\Authorize\AuthorizationManager */
+    $authorizer = $this->ci->authorizer;
+
+    /** @var UserFrosting\Sprinkle\Account\Database\Models\User $currentUser */
+    $currentUser = $this->ci->currentUser;
+/*
+    // Access-controlled page
+    if (!$authorizer->checkAccess($currentUser, 'uri_ufexcel')) {
+        throw new ForbiddenException();
+    }
+*/
+    return $this->ci->view->render($response, 'pages/ufexcel-config.html.twig');
+  }
+
+
+
+
+
+
+    protected function checkConfig($tableId)
+    {
+      /*
+      * Get the site.ufexcel config
+      */
+      $ufexcelConfig = $this->ci->config['site.ufexcel'];
+
+      if (array_key_exists($tableId, $ufexcelConfig)) {
+        $config = $ufexcelConfig[$tableId];
+        return $config;
+      }
+
+      else {
+        throw new ForbiddenException();
+      }
+
+    }
+
 
     public function import($request, $response, $args)
     {
@@ -62,6 +112,12 @@ class UFExcelController extends SimpleController
         $worksheet = $spreadsheet->getActiveSheet();
 
         $rows = $worksheet->toArray();
+        Debug::debug("rows");
+        Debug::debug(print_r($rows,true));
+
+        $test = json_encode($rows);
+        Debug::debug("test");
+        Debug::debug(print_r($test,true));
 
         //Grab the header row so $rows only contains our data to be inserted
         $columns = array_shift($rows);
@@ -101,7 +157,94 @@ class UFExcelController extends SimpleController
 
         return $response->withStatus(200);
 
+
+    }
+
+
+    public function getModalImport($request, $response, $args)
+    {
+        $table = $request->getQueryParam('table');
+
+
+        /** @var UserFrosting\Sprinkle\Account\Authorize\AuthorizationManager $authorizer */
+        $authorizer = $this->ci->authorizer;
+
+        /** @var UserFrosting\Sprinkle\Account\Database\Models\User $currentUser */
+        $currentUser = $this->ci->currentUser;
+
+        /*
+          // Access-controlled resource - check that currentUser has permission to edit "permissions" field for this role
+          if (!$authorizer->checkAccess($currentUser, 'update_role_field', [
+              'role' => $role,
+              'fields' => ['permissions']
+          ])) {
+              throw new ForbiddenException();
+          }
+        */
+        return $this->ci->view->render($response, 'modals/import.html.twig', [
+      'table' => $table
+  ]);
 }
+
+
+
+    public function getModalImportTemplate($request, $response, $args)
+    {
+        // GET parameters
+        $tableId = $request->getQueryParam('table');
+
+
+        $settings = $this->checkConfig($tableId);
+        $table = $settings['table'];
+
+        $columns = $this->getColumns($table);
+
+
+      // Remove autoincrementing and required columns from optional list.
+        $optionalColumns = array_diff($columns['columns'], $columns['notNullable']);
+        $requiredColumns = array_diff($columns['notNullable'], $columns['autoincrementing']);
+
+
+        /** @var UserFrosting\Sprinkle\Account\Authorize\AuthorizationManager $authorizer */
+        $authorizer = $this->ci->authorizer;
+
+        /** @var UserFrosting\Sprinkle\Account\Database\Models\User $currentUser */
+        $currentUser = $this->ci->currentUser;
+
+        /*
+          // Access-controlled resource - check that currentUser has permission to edit "permissions" field for this role
+          if (!$authorizer->checkAccess($currentUser, 'update_role_field', [
+              'role' => $role,
+              'fields' => ['permissions']
+          ])) {
+              throw new ForbiddenException();
+          }
+        */
+        return $this->ci->view->render($response, 'modals/import-template.html.twig', [
+      'columns' => $optionalColumns,
+      'requiredColumns' => $requiredColumns,
+      'table' => $table
+  ]);
+    }
+
+    public function getImportTemplate($request, $response, $args)
+    {
+        $params = $request->getParsedBodyParam('columns');
+
+        $table = $request->getQueryParam('table');
+
+        header("Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        header("Content-Disposition: attachment;filename=\"template.xlsx\"");
+        header("Cache-Control: max-age=0");
+
+        $spreadsheet = new Spreadsheet();
+        $spreadsheet->getActiveSheet()
+    ->fromArray($params, null, 'A1');
+
+        $writer = new Xlsx($spreadsheet);
+        $writer->save('php://output');
+    }
+
 
 
 
@@ -137,9 +280,9 @@ class UFExcelController extends SimpleController
         $array = json_decode(json_encode($data), true);
 
 
-/*
-** Spreadsheet style arrays https://phpspreadsheet.readthedocs.io/en/develop/topics/recipes/#styles
-*/
+
+  // Spreadsheet style arrays https://phpspreadsheet.readthedocs.io/en/develop/topics/recipes/#styles
+
 
         if ($params['borders'] == "true") {
             $bodyStyle = [
@@ -235,127 +378,6 @@ class UFExcelController extends SimpleController
 
 
 
-    public function getImportTemplate($request, $response, $args)
-    {
-        $params = $request->getParsedBodyParam('columns');
-
-        $table = $request->getQueryParam('table');
-
-        header("Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-        header("Content-Disposition: attachment;filename=\"template.xlsx\"");
-        header("Cache-Control: max-age=0");
-
-        $spreadsheet = new Spreadsheet();
-        $spreadsheet->getActiveSheet()
-    ->fromArray($params, null, 'A1');
-
-        $writer = new Xlsx($spreadsheet);
-        $writer->save('php://output');
-    }
-
-
-
-    public function getModalImport($request, $response, $args)
-    {
-        $table = $request->getQueryParam('table');
-
-
-        /** @var UserFrosting\Sprinkle\Account\Authorize\AuthorizationManager $authorizer */
-        $authorizer = $this->ci->authorizer;
-
-        /** @var UserFrosting\Sprinkle\Account\Database\Models\User $currentUser */
-        $currentUser = $this->ci->currentUser;
-
-        /*
-          // Access-controlled resource - check that currentUser has permission to edit "permissions" field for this role
-          if (!$authorizer->checkAccess($currentUser, 'update_role_field', [
-              'role' => $role,
-              'fields' => ['permissions']
-          ])) {
-              throw new ForbiddenException();
-          }
-        */
-        return $this->ci->view->render($response, 'modals/import.html.twig', [
-      'table' => $table
-    ]);
-}
-
-
-
-
-public function getModalExport($request, $response, $args)
-{
-
-// GET parameters
-    $tableId = $request->getQueryParam("table");
-
-    $settings = $this->checkConfig($tableId);
-    $table = $settings['table'];
-
-    $columns = $this->getColumns($table);
-
-    /** @var UserFrosting\Sprinkle\Account\Authorize\AuthorizationManager $authorizer */
-    $authorizer = $this->ci->authorizer;
-
-    /** @var UserFrosting\Sprinkle\Account\Database\Models\User $currentUser */
-    $currentUser = $this->ci->currentUser;
-
-    /*
-        // Access-controlled resource - check that currentUser has permission to edit "permissions" field for this role
-        if (!$authorizer->checkAccess($currentUser, 'update_role_field', [
-            'role' => $role,
-            'fields' => ['permissions']
-        ])) {
-            throw new ForbiddenException();
-        }
-    */
-    return $this->ci->view->render($response, 'modals/export.html.twig', [
-      'columns' => $columns['columns'],
-      'notNullable' => $columns['notNullable'],
-      'table' => $table
-    ]);
-}
-
-
-public function getModalImportTemplate($request, $response, $args)
-{
-    // GET parameters
-    $tableId = $request->getQueryParam('table');
-
-
-    $settings = $this->checkConfig($tableId);
-    $table = $settings['table'];
-
-    $columns = $this->getColumns($table);
-
-
-  // Remove autoincrementing and required columns from optional list.
-    $optionalColumns = array_diff($columns['columns'], $columns['notNullable']);
-    $requiredColumns = array_diff($columns['notNullable'], $columns['autoincrementing']);
-
-
-    /** @var UserFrosting\Sprinkle\Account\Authorize\AuthorizationManager $authorizer */
-    $authorizer = $this->ci->authorizer;
-
-    /** @var UserFrosting\Sprinkle\Account\Database\Models\User $currentUser */
-    $currentUser = $this->ci->currentUser;
-
-    /*
-      // Access-controlled resource - check that currentUser has permission to edit "permissions" field for this role
-      if (!$authorizer->checkAccess($currentUser, 'update_role_field', [
-          'role' => $role,
-          'fields' => ['permissions']
-      ])) {
-          throw new ForbiddenException();
-      }
-    */
-    return $this->ci->view->render($response, 'modals/import-template.html.twig', [
-      'columns' => $optionalColumns,
-      'requiredColumns' => $requiredColumns,
-      'table' => $table
-    ]);
-}
-
 
     // Use DoctrineSchemaManager to return all available columns for a table.
     private function getColumns($table)
@@ -379,30 +401,45 @@ public function getModalImportTemplate($request, $response, $args)
 
 
 
+
     /**
-    *      This methods accepts id attribute of table and returns the ufexcel configuration.
-    *      If the table id is not found it is assumed the table should not be used with ufexcel
-    *      and returns ForbiddenException
-    **/
-        protected function checkConfig($tableId)
-        {
-          /*
-          * Get site.ufexcel config
-          */
-          $ufexcelConfig = $this->ci->config['site.ufexcel'];
+     * Renders the modal form for editing the pickup lists an address is assigned to.
+     *
+     * This does NOT render a complete page.  Instead, it renders the HTML for the form, which can be embedded in other pages.
+     * This page requires authentication.
+     * Request type: GET
+     **/
+    public function getModalExport($request, $response, $args)
+    {
 
-          if (array_key_exists($tableId, $ufexcelConfig)) {
-            $config = $ufexcelConfig[$tableId];
-            return $config;
-          }
+    // GET parameters
+        $tableId = $request->getQueryParam("table");
 
-          else {
-            throw new ForbiddenException();
-          }
+        $settings = $this->checkConfig($tableId);
+        $table = $settings['table'];
 
-        }
+        $columns = $this->getColumns($table);
 
+        /** @var UserFrosting\Sprinkle\Account\Authorize\AuthorizationManager $authorizer */
+        $authorizer = $this->ci->authorizer;
 
+        /** @var UserFrosting\Sprinkle\Account\Database\Models\User $currentUser */
+        $currentUser = $this->ci->currentUser;
 
-
+        /*
+            // Access-controlled resource - check that currentUser has permission to edit "permissions" field for this role
+            if (!$authorizer->checkAccess($currentUser, 'update_role_field', [
+                'role' => $role,
+                'fields' => ['permissions']
+            ])) {
+                throw new ForbiddenException();
+            }
+        */
+        return $this->ci->view->render($response, 'modals/export.html.twig', [
+        'columns' => $columns['columns'],
+        'notNullable' => $columns['notNullable'],
+        'model' => $model,
+        'table' => $table
+    ]);
+    }
 }
