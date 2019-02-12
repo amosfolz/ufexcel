@@ -1,0 +1,25 @@
+# Request schema for ufexcel
+
+tableid:
+  validators:
+    required:
+      label: Table ID
+      message: This is the 'id' set on your client-side table.
+    length:
+      label: Table ID
+      min: 1
+      max: 30
+      message: "Must be between {{min}} and {{max}} characters."
+
+dbtable:
+  validators:
+    required:
+      label: Database Table
+      message: This is the server-side database table.
+    length:
+      label: Database Table
+      min: 1
+      max: 30
+      message: "Must be between {{min}} and {{max}} characters."
+    dbtable:
+      message: Please provide a table name.

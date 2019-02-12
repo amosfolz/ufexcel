@@ -1,0 +1,39 @@
+<form class="js-form" id="new-config" action="{{site.uri.public}}/{{form.action}}" method="{{form.method}}">
+  {% include "forms/csrf.html.twig" %}
+  <div class="js-form-alerts">
+  </div>
+<div class="row">
+  <div class="col-sm-12">
+  <div class="form-group">
+    <label>Table ID</label>
+    <div class="input-group">
+      <span class="input-group-addon"><i class="fa fa-table fa-fw"></i></span>
+    <input type="text" class="form-control" name="tableid" value="{{ufexcelconfig.tableid}}">
+  </div>
+  </div>
+</div>
+</div>
+<div class="row">
+<div class="col-sm-12">
+  <div class="form-group">
+    <label>Database Table</label>
+    <div class="input-group">
+          <span class="input-group-addon"><i class="fa fa-database fa-fw"></i></span>
+    <input type="text" class="form-control" name="dbtable" value="{{ufexcelconfig.dbtable}}">
+  </div>
+  </div>
+</div>
+</div>
+  <div class="row">
+    <div class="col-xs-6">
+      <button type="submit" class="btn btn-primary btn-block btn-flat">{{form.submit_text}}</button>
+    </div>
+    <div class="col-xs-4">
+      <button type="button" class="btn btn-block btn-lg btn-link" data-dismiss="modal">{{translate("CANCEL")}}</button>
+    </div>
+  </div>
+</form>
+<!-- Include validation rules -->
+<script>
+{% include "pages/partials/page.js.twig" %}
+</script>

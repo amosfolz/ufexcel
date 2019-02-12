@@ -53,14 +53,66 @@ UserFrosting `admin/templates/pages`:
 ### Usage and Features
 
 
-#### Config
-ufexcel uses a custom configuration file found in `config/default.php`.
+#### Configuration Dashboard
 
 
-#### Permissions/Roles
-ufexcel adds two permissions and two roles. 
+##### Permissions/Roles
+ufexcel adds a `UFExcel Administrator` role that provides authorization to view the configuration dashboard and manage configurations. 
+
+##### Table Configurations
+ufexcel uses a custom authorization extension to control table settings and user access to features.
+
+You need to add a configuration for each client-side table for which UFExcel should be enabled. This consists of two parameters used to link your client-side table with your database table. 
+
+* `tableid` - The ID set on your client-side table. If using ufTable, this is normally setup in your `page` template when you `include` your table: 
+```
+    <div class="box-body">
+        {% include "tables/users-custom.html.twig" with {
+                "table" : {
+                    "id" : "table-members"
+                }
+            }
+        %}
+    </div>
+ ```
+
+* `dbtable` - The database table.
+
+##### User Settings
+
+After you create the table configuration you assign access to users Actions->Edit Users. 
+
+![UserSettings](/screenshots/settings.png?raw=true "User Settings")
+
 * `Import` - allows user to import data as well as use the `template generator`. 
 * `Export` - allows user to export data.
 Note the `Export` permission does not impact the default "Download" User Frosting feature. ufexcel is not restricted by constraints setup in your Eloquent `model`, so take this into consideration when granting access to this feature. 
+
+
+
+#### Adding the dashboard to menu
+
+Following the instructions at [this link](https://learn.userfrosting.com/recipes/advanced-tutorial/adding-menu) you can add this to your menu:
+```
+    {% if checkAccess('ufexcel_dashboard') %}
+        <li>
+            <a href="/ufexcel"><i class="fa fa-cog fa-fw"></i> <span>UFExcel Dashboard</span></a>
+        </li>
+    {% endif %}
+```
+
+
+#### Adding to custom tables
+
+To add to additional tables, include `js/widgets/ufexcet` asset-bundle.
+```
+{% block scripts_page %}
+    {# Add ufexcel widget #}
+    {{ assets.js('js/widgets/ufexcel') | raw }}
+{% endblock %}
+```
+
+
+
 
 

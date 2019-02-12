@@ -1,7 +1,7 @@
 
 
 <!-- forms/export.html.twig -->
-<form class="js-form" id="export" action="{{site.uri.public}}/api/ufexcel/export" method="post">
+<form class="js-form" id="export" action="{{site.uri.public}}/{{form.action}}" method="{{form.method}}">
   {% include "forms/csrf.html.twig" %}
 
   <div class="box-body">
@@ -24,7 +24,6 @@
 <thead>
 <tr><th> Select columns to include</th></tr>
 </thead>
-  <input type="hidden" name="table" value="{{table}}">
 <tbody>
     {% for column in columns %}
 <tr class="uf-collection-row">
@@ -40,7 +39,7 @@
 </table>
 <div class="row">
   <div class="col-xs-6">
-      <button type="submit" class="btn btn-primary btn-block btn-flat">Download</button>
+      <button type="submit" class="btn btn-primary btn-block btn-flat">{{form.submit_text}}</button>
   </div>
   <div class="col-xs-4">
     <button type="button" class="btn btn-block btn-lg btn-link" data-dismiss="modal">{{translate("CANCEL")}}</button>

@@ -1,20 +1,19 @@
-<!-- forms/exporter.html.twig -->
 
 
-<form class="js-form" id="import" action="{{site.uri.public}}/api/ufexcel/import" method="post" enctype="multipart/form-data">
+<!-- forms/import.html.twig -->
+<form class="js-form" id="import" action="{{site.uri.public}}/{{form.action}}" method="{{form.method}}" enctype="multipart/form-data">
   {% include "forms/csrf.html.twig" %}
-
   <div class="box-body">
-<table>
-<tr><th>Please select the file to upload: </th></tr>
-<tbody>
-      <input type="hidden" name="table" value="{{table}}">
-<label>
-      <input type="file" name="importFile" id="importFile">
-</label>
 <div class="row">
-  <div class="col-xs-4">
-      <button type="submit" class="btn btn-primary btn-block btn-flat">Submit</button>
+  <div class="col-xs-8">
+    <label>
+        <input type="file" name="importFile" id="importFile">
+    </label>
+  </div>
+</div>
+<div class="row">
+  <div class="col-xs-6">
+      <button type="submit" class="btn btn-primary btn-block btn-flat">{{form.submit_text}}</button>
   </div>
   <div class="col-xs-4">
     <button type="button" class="btn btn-block btn-lg btn-link" data-dismiss="modal">{{translate("CANCEL")}}</button>

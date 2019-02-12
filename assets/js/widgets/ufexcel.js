@@ -1,16 +1,53 @@
 
 
+$(document).ready(function() {
 
-function attachForm(table_id) {
+  //Check each table on the page against the configuration in site.ufexcel_tables.
+    $('table').each(function() {
+        var table_id =  $(this).attr('id');
+
+        //Get the parent div
+        var div = $(this).parents().closest('div[id]');
+
+        // menu options for that table
+        var options = div.children().find("[class^=ufexcel]");
+
+
+            $.ajax({
+    type: 'GET',
+    url : site.uri.public + '/api/ufexcel/features/' + table_id,
+    success: function(data){
+      response = data;
+
+
+      if (response != null && response.features.import === true)
+         {
+            $('li.ufexcel-import').show();
+            $('li.ufexcel-template').show();
+          }
+
+      if (response != null && response.features.export === true)
+          {
+             $('li.ufexcel-export').show();
+          }
+        }
+      });
+    });
+  });
+
+
+
+
+
+
+
+
+function attachImportForm(table_id) {
 $("body").on('renderSuccess.ufModal', function (data) {
 
 var modal = $(this).ufModal('getModal');
-
-console.log("var modal is:", modal);
-
 var form = modal.find('.js-form');
 
-console.log("var form is:", form);
 
 //Set the "table" form field value to table_id
 $("input[name=table]").val(table_id);
@@ -28,35 +65,43 @@ form.find('input[name=icon]').on('input change', function() {
 $(this).prev(".icon-preview").find("i").removeClass().addClass($(this).val());
 });
 
-
-//With this disabled the modal does not close and we are able to download the export. However, we need to modal to close/page to refresh.
-
-/*
 // Set up the form for submission
 form.ufForm({
 binaryCheckboxes: false
 }).on("submitSuccess.ufForm", function() {
 
-$(".modal").hide();
-$(".modal-backdrop").hide();
-console.log("var modal is:", modal);
-//modal.ufModal("destroy")
-
-
+window.location.reload();
 
 });
-*/
 
 });
 }
 
-/*
-$("#exporter").ufForm({
-    msgTarget: $("#alerts-page")
-}).on("submitSuccess.ufForm", function(event, data, textStatus, jqXHR) {
-    redirectOnLogin(jqXHR);
-});
+function attachForm(table_id) {
+$("body").on('renderSuccess.ufModal', function (data) {
+
+var modal = $(this).ufModal('getModal');
+var form = modal.find('.js-form');
+
+
+//Set the "table" form field value to table_id
+$("input[name=table]").val(table_id);
+
+/**
+* Set up modal widgets
 */
+// Set up any widgets inside the modal
+form.find(".js-select2").select2({
+width: '100%'
+});
+
+// Set icon when changed
+form.find('input[name=icon]').on('input change', function() {
+$(this).prev(".icon-preview").find("i").removeClass().addClass($(this).val());
+});
+
+});
+}
 
 
 
@@ -65,28 +110,17 @@ $("#exporter").ufForm({
 
 $(document).ready(function() {
 
-//var test = $(this).closest('table').attr('id');
 
+  $(window).bind ("beforeunload",  function () {
+      /* This code will fire just before the Individual-file Download
+         dialog opens.
+         Close the after the server sends back file.
+      */
 
-/*
-var table_id = $("table:first").attr('id');
-console.log("the table id:", table_id);
-*/
-/*
-var find_table = $.inArray(table_id, site);
-console.log("find_table inArray:", find_table);
-
-console.log("site.ufexcel_tables = :", site["ufexcel_tables"]);
-*/
+      $('.modal').modal('hide');
+  } );
 
 /*
-var menuOptions = site["ufexcel_tables"][table_id]["menu-options"];
-console.log("the menu options:", menuOptions);
-var table = site["ufexcel_tables"][table_id]["table"];
-console.log("table is:", table);
-*/
-
-
 //Check each table on the page against the configuration in site.ufexcel_tables.
 var all_tables = $('table').each(function() {
 
@@ -109,51 +143,12 @@ var options = div.children().find("[class^=ufexcel]");
           }
           if (!(hidden.includes('import'))){
             $('li.ufexcel-import').show();
-          }
-          if (!(hidden.includes('template'))){
             $('li.ufexcel-template').show();
           }
-
-/*
-          //Sets menu options according to config
-          $.each(menuOptions, function(key, value){
-            console.log("value",value);
-              if (value != "hidden"){
-                    $('li.ufexcel-'+key).show();
-  };
-})*/
-
-
-
  }
 });
 
-
-
-
-
-
-
-
-
-
-/*
-$.each(site["ufexcel_tables"], function(site, params){
-
- if (site == table_id){
-//    console.log("The site is in the config:", site);
-
-    var table = site["ufexcel_tables"][table_id]["table"];
-
-
-    var contents = $('#table_id');
-  //  console.log("the contents are:", contents);
-  }
-})
 */
-
-
-
 
 
 
@@ -164,7 +159,7 @@ $('.js-ufexcel-export').click(function() {
   $("body").ufModal({
   sourceUrl: site.uri.public + "/modals/ufexcel/export",
   ajaxParams: {
-        table : table_id
+        tableid : table_id
      },
   msgTarget: $("#alerts-page")
       });
@@ -179,7 +174,7 @@ $('.js-ufexcel-export').click(function() {
       $("body").ufModal({
       sourceUrl: site.uri.public + "/modals/ufexcel/import/template",
       ajaxParams: {
-          table : table_id
+          tableid : table_id
          },
       msgTarget: $("#alerts-page")
           });
@@ -195,12 +190,12 @@ $('.js-ufexcel-export').click(function() {
      $("body").ufModal({
       sourceUrl: site.uri.public + "/modals/ufexcel/import",
       ajaxParams: {
-          table : table_id
+          tableid : table_id
          },
       msgTarget: $("#alerts-page")
           });
 
-          attachForm(table_id);
+          attachImportForm(table_id);
           });
 
 
