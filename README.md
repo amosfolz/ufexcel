@@ -90,8 +90,16 @@ Note the `Export` permission does not impact the default "Download" User Frostin
 
 
 
+#### Adding the dashboard to menu
 
-
+Following the instructions at [this link](https://learn.userfrosting.com/recipes/advanced-tutorial/adding-menu) you can add this to your menu:
+```
+    {% if checkAccess('ufexcel_dashboard') %}
+        <li>
+            <a href="/ufexcel"><i class="fa fa-cog fa-fw"></i> <span>UFExcel Dashboard</span></a>
+        </li>
+    {% endif %}
+```
 
 
 
