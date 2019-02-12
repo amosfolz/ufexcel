@@ -82,7 +82,7 @@ You need to add a configuration for each client-side table for which UFExcel sho
 
 After you create the table configuration you assign access to users Actions->Edit Users. 
 
-![Alt text](/screenshots/UserSettings.png?raw=true "User Settings")
+![UserSettings](/screenshots/settings.png?raw=true "User Settings")
 
 * `Import` - allows user to import data as well as use the `template generator`. 
 * `Export` - allows user to export data.
