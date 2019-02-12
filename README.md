@@ -53,12 +53,18 @@ UserFrosting `admin/templates/pages`:
 ### Usage and Features
 
 
-#### Config
+#### Configuration Dashboard
+
+
+##### Permissions/Roles
+ufexcel adds a `UFExcel Administrator` role that provides authorization to view the configuration dashboard and manage configurations. 
+
+##### Table Configurations
 ufexcel uses a custom authorization extension to control table settings and user access to features.
 
+You need to add a configuration for each client-side table for which UFExcel should be enabled. This consists of two parameters used to link your client-side table with your database table. 
 
-`table-id` 
-The id set on your html table. If using ufTable, this is normally setup in your `page` template when you `include` your table: 
+* `tableid` - The ID set on your client-side table. If using ufTable, this is normally setup in your `page` template when you `include` your table: 
 ```
     <div class="box-body">
         {% include "tables/users-custom.html.twig" with {
@@ -70,10 +76,14 @@ The id set on your html table. If using ufTable, this is normally setup in your 
     </div>
  ```
 
+* `dbtable` - The database table.
 
+##### User Settings
 
-#### Permissions/Roles
-ufexcel adds two permissions and two roles to grant those permissions. 
+After you create the table configuration you assign access to users Actions->Edit Users. 
+
+![Alt text](/screenshots/UserSettings.png?raw=true "User Settings")
+
 * `Import` - allows user to import data as well as use the `template generator`. 
 * `Export` - allows user to export data.
 Note the `Export` permission does not impact the default "Download" User Frosting feature. ufexcel is not restricted by constraints setup in your Eloquent `model`, so take this into consideration when granting access to this feature. 
