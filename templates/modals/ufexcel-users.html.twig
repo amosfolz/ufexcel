@@ -1,0 +1,77 @@
+{% extends "modals/modal.html.twig" %}
+
+{% block modal_title %}<label>Table: {{ufexceltable.tableid}}</label>
+<div class="table">
+Control user-level access.
+</div>
+
+{% endblock %}
+
+{% block modal_size %}modal-lg{% endblock %}
+
+{% block modal_body %}
+<form class="js-form" method="PUT" action="{{site.uri.public}}/api/ufexcel/update/{{ ufexceltable.tableid }}/users">
+    {% include "forms/csrf.html.twig" %}
+    <div class="js-form-alerts">
+    </div>
+    <div class="js-form-ufexcel-users">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Username</th>
+                    <th>Import</th>
+                    <th>Export</th>
+                    <th style="text-align:right"> Remove</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+        <div class="padding-bottom">
+            <label>Add user:</label>
+            <select class="form-control js-select-new" type="text">
+            <option></option>
+            </select>
+        </div>
+    </div>
+    <br>
+    <div class="row">
+        <div class="col-xs-12 col-sm-6">
+            <button type="submit" class="btn btn-block btn-lg btn-success">Update</button>
+        </div>
+        <div class="col-xs-12 col-sm-3 pull-right">
+            <button type="button" class="btn btn-block btn-lg btn-link" data-dismiss="modal">{{translate('CANCEL')}}</button>
+        </div>
+    </div>
+</form>
+
+{# This contains a series of <script> blocks, each of which is a client-side Handlebars template.
+ # Note that these are NOT Twig templates, although the syntax is similar.  We wrap them in the `verbatim` tag,
+ # so that Twig will output them directly into the DOM instead of trying to treat them like Twig templates.
+ #
+ # These templates require handlebars-helpers.js, moment.js
+#}
+{% verbatim %}
+<script id="user-select-option" type="text/x-handlebars-template">
+    <div>
+      <strong>{{first_name}} {{last_name}}</strong>
+    </div>
+</script>
+
+<script id="user-row" type="text/x-handlebars-template">
+    <tr class="uf-collection-row">
+        <td>{{first_name}} {{last_name}}<input type="hidden" name="value[{{ rownum }}][user_id]" value="{{id}}"> </td>
+        <td>{{user_name}}</td>
+        <td><input type="checkbox" name="value[{{ rownum }}][import]" value="" {{#ifx pivot.import '==' 1}} checked {{/ifx}} ></td>
+        <td><input type="checkbox" name="value[{{ rownum }}][export]" value="" {{#ifx pivot.export '==' 1}} checked {{/ifx}} ></td>
+        <td><button type="button" class="btn btn-link btn-trash js-delete-row pull-right" title="Delete"> <i class="fa fa-trash"></i> </button></td>
+    </tr>
+</script>
+{% endverbatim %}
+
+<!-- Include validation rules -->
+<script>
+    {% include "pages/partials/page.js.twig" %}
+</script>
+{% endblock %}

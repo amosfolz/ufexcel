@@ -13,6 +13,19 @@
               }
           }
       },
+        "js/pages/ufexcel-config": {
+            "scripts": [
+                "js/pages/ufexcel-config.js",
+                "js/widgets/ufexcel-config.js"
+            ],
+            "options": {
+                "result": {
+                    "type": {
+                        "scripts": "plain"
+                    }
+                }
+            }
+        },
       "css/ufexcel": {
           "styles": [
 

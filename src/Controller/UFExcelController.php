@@ -26,32 +26,516 @@ use PhpOffice\PhpSpreadsheet\Style;
 class UFExcelController extends SimpleController
 {
 
-/**
-*      This methods accepts id attribute of table and returns the ufexcel configuration.
-*      If the table id is not found it is assumed the table should not be used with ufexcel
-*      and returns ForbiddenException
-**/
+
+  public function getUsers($request, $response, $args)
+  {
+
+      $ufexcelTable = $this->getUfexcelTableFromParams($args);
+
+      if (!$ufexcelTable) {
+          throw new NotFoundException($request, $response);
+      }
+
+      // GET parameters
+      $params = $request->getQueryParams();
+
+      /** @var UserFrosting\Sprinkle\Account\Authorize\AuthorizationManager $authorizer */
+      $authorizer = $this->ci->authorizer;
+
+      /** @var UserFrosting\Sprinkle\Account\Database\Models\User $currentUser */
+      $currentUser = $this->ci->currentUser;
+
+      // Access-controlled page
+      if (!$authorizer->checkAccess($currentUser, 'ufexcel_dashboard')) {
+          throw new ForbiddenException();
+      }
+
+      /** @var UserFrosting\Sprinkle\Core\Util\ClassMapper $classMapper */
+      $classMapper = $this->ci->classMapper;
+
+      $sprunje = $classMapper->createInstance('ufexcel_sprunje', $classMapper, $params);
+      $sprunje->extendQuery(function ($query) use ($ufexcelTable){
+          return $query->with('users')
+          ->where('ufexcel_tables.id', '=', $ufexcelTable->id);
+      });
+
+      // Be careful how you consume this data - it has not been escaped and contains untrusted user-supplied content.
+      // For example, if you plan to insert it into an HTML DOM, you must escape it on the client side (or use client-side templating).
+      return $sprunje->toResponse($response);
+  }
+
+  public function getTableFeatures($request, $response, $args)
+  {
+
+    $ufexcelTable = $this->getUfexcelTableFromParams($args);
+
+    /** @var UserFrosting\Sprinkle\Account\Database\Models\User $currentUser */
+    $currentUser = $this->ci->currentUser;
+
+    /** @var UserFrosting\Sprinkle\Account\Authorize\AuthorizationManager $authorizer */
+    $authorizer = $this->ci->authorizer;
+
+    $json['table'] =  $args["tableid"];
+
+    if ($authorizer->checkAccess($currentUser, 'ufexcel_authorizer', [
+        'user'  => $currentUser,
+        'table' => $ufexcelTable,
+        'feature'   => 'import'
+    ])) {
+      $json['features']['import'] = true;
+    }
+
+    if ($authorizer->checkAccess($currentUser, 'ufexcel_authorizer', [
+        'user'  => $currentUser,
+        'table' => $ufexcelTable,
+        'feature'   => 'export'
+    ])) {
+      $json['features']['export'] = true;
+    }
+
+    // Be careful how you consume this data - it has not been escaped and contains untrusted user-supplied content.
+    // For example, if you plan to insert it into an HTML DOM, you must escape it on the client side (or use client-side templating).
+    return $response->withJson($json, 200, JSON_PRETTY_PRINT);
+  }
+
+  public function getModalEditUsers($request, $response, $args)
+  {
+      // GET parameters
+      $params = $request->getQueryParams();
+
+      $ufexcelTable = $this->getUfexcelTableFromParams($params);
+
+      // If the address doesn't exist, return 404
+      if (!$ufexcelTable) {
+          throw new NotFoundException($request, $response);
+      }
+
+      /** @var UserFrosting\Sprinkle\Account\Database\Models\User $currentUser */
+      $currentUser = $this->ci->currentUser;
+
+      /** @var UserFrosting\Sprinkle\Account\Authorize\AuthorizationManager $authorizer */
+      $authorizer = $this->ci->authorizer;
+
+      // Access-controlled page
+      if (!$authorizer->checkAccess($currentUser, 'ufexcel_dashboard')) {
+          throw new ForbiddenException();
+      }
+      return $this->ci->view->render($response, 'modals/ufexcel-users.html.twig', [
+          'ufexceltable' => $ufexcelTable
+      ]);
+  }
+
+
+
+
+  /**
+   * Processes the request to update user access permissions for UFExcel Tables.
+   */
+  public function updateUsers($request, $response, $args)
+  {
+
+      $ufexcelTable = $this->getUfexcelTableFromParams($args);
+
+      if (!$ufexcelTable) {
+          throw new NotFoundException($request, $response);
+      }
+
+      /** @var UserFrosting\Sprinkle\Account\Authorize\AuthorizationManager $authorizer */
+      $authorizer = $this->ci->authorizer;
+
+      /** @var UserFrosting\Sprinkle\Account\Database\Models\User $currentUser */
+      $currentUser = $this->ci->currentUser;
+
+      // Access-controlled page
+      if (!$authorizer->checkAccess($currentUser, 'ufexcel_dashboard')) {
+          throw new ForbiddenException();
+      }
+
+      /** @var UserFrosting\Config\Config $config */
+      $config = $this->ci->config;
+
+      // Get PUT parameters: value
+      $put = $request->getParsedBody();
+
+      if (!isset($put['value'])) {
+          throw new BadRequestException();
+      }
+
+      $params = [
+          'users' => $put['value']
+      ];
+
+      // Load the request schema
+      $schema = new RequestSchema('schema://requests/ufexcel-users.json');
+
+      // Whitelist and set parameter defaults
+      $transformer = new RequestDataTransformer($schema);
+      $data = $transformer->transform($params);
+
+
+      // Validate, and throw exception on validation errors.
+      $validator = new ServerSideValidator($schema, $this->ci->translator);
+      if (!$validator->validate($data)) {
+          // TODO: encapsulate the communication of error messages from ServerSideValidator to the BadRequestException
+          $e = new BadRequestException();
+          foreach ($validator->errors() as $idx => $field) {
+              foreach($field as $eidx => $error) {
+                  $e->addUserMessage($error);
+              }
+          }
+          throw $e;
+      }
+
+      // Get validated and transformed value
+      $users = $data['users'];
+
+      /** @var UserFrosting\I18n\MessageTranslator $translator */
+      $ms = $this->ci->alerts;
+
+      // Begin transaction - DB will be rolled back if an exception occurs
+      Capsule::transaction( function() use ($users, $ufexcelTable, $currentUser) {
+
+          $ufexcelTable->users()->detach();
+          $newUsers = collect($users);
+          $ufexcelTable->users()->sync($newUsers);
+
+          // Create activity record
+          $this->ci->userActivityLogger->info("User {$currentUser->user_name} updated user(s) permissions for '$ufexcelTable->tableid'.", [
+              'type' => 'ufexcel_table_users',
+              'user_id' => $currentUser->id
+          ]);
+      });
+
+      // Add success messages
+          $ms->addMessage('success', ('User permissions updated for: ' . $ufexcelTable->tableid));
+}
+
+
+
+  /**
+   * Processes the request to update an existing group's details.
+   *
+   * Processes the request from the group update form, checking that:
+   * 1. The group name/slug are not already in use;
+   * 2. The user has the necessary permissions to update the posted field(s);
+   * 3. The submitted data is valid.
+   * This route requires authentication (and should generally be limited to admins or the root user).
+   * Request type: PUT
+   * @see getModalGroupEdit
+   */
+  public function update($request, $response, $args)
+  {
+      // Get the group based on slug in URL
+      $ufexcelTable = $this->getUfexcelTableFromParams($args);
+
+      if (!$ufexcelTable) {
+          throw new NotFoundException($request, $response);
+      }
+
+      // Get PUT parameters: (name, slug, icon, description)
+      $params = $request->getParsedBody();
+
+      /** @var UserFrosting\Sprinkle\Core\MessageStream $ms */
+      $ms = $this->ci->alerts;
+
+      // Load the request schema
+      $schema = new RequestSchema('schema://requests/ufexcel-create.json');
+
+      // Whitelist and set parameter defaults
+      $transformer = new RequestDataTransformer($schema);
+      $data = $transformer->transform($params);
+
+      $error = false;
+
+      // Validate request data
+      $validator = new ServerSideValidator($schema, $this->ci->translator);
+      if (!$validator->validate($data)) {
+          $ms->addValidationErrors($validator);
+          $error = true;
+      }
+
+
+      /** @var UserFrosting\Sprinkle\Account\Database\Models\User $currentUser */
+      $currentUser = $this->ci->currentUser;
+
+      /** @var UserFrosting\Sprinkle\Account\Authorize\AuthorizationManager $authorizer */
+      $authorizer = $this->ci->authorizer;
+
+      // Access-controlled page
+      if (!$authorizer->checkAccess($currentUser, 'ufexcel_dashboard')) {
+          throw new ForbiddenException();
+      }
+
+      /** @var UserFrosting\Sprinkle\Core\Util\ClassMapper $classMapper */
+      $classMapper = $this->ci->classMapper;
+
+      // Check if tableid already exists
+      if (
+          isset($data['tableid']) &&
+          $data['tableid'] != $ufexcelTable->tableid &&
+          $classMapper->staticMethod('ufexcel_table', 'where', 'tableid', $data['tableid'])->first()
+      ) {
+          $ms->addMessage('danger', 'There is already a configuration with that Table ID', $data);
+          $error = true;
+      }
+
+      if ($error) {
+          return $response->withStatus(400);
+      }
+
+      // Begin transaction - DB will be rolled back if an exception occurs
+      Capsule::transaction( function() use ($data, $ufexcelTable, $currentUser) {
+          // Update the group and generate success messages
+          foreach ($data as $name => $value) {
+              if ($value != $ufexcelTable->$name) {
+                  $ufexcelTable->$name = $value;
+              }
+          }
+
+          $ufexcelTable->save();
+
+          // Create activity record
+          $this->ci->userActivityLogger->info("User {$currentUser->user_name} updated ufexcel configuration for {$ufexcelTable->tableid}.", [
+              'type' => 'ufexcel_table',
+              'user_id' => $currentUser->id
+          ]);
+      });
+
+      $ms->addMessageTranslated('success', 'Details updated.');
+
+      return $response->withStatus(200);
+  }
+
+
+  protected function getUfexcelTableFromParams($params)
+  {
+      // Load the request schema
+      $schema = new RequestSchema('schema://requests/get-by-tableid.json');
+
+      // Whitelist and set parameter defaults
+      $transformer = new RequestDataTransformer($schema);
+      $data = $transformer->transform($params);
+
+      // Validate, and throw exception on validation errors.
+      $validator = new ServerSideValidator($schema, $this->ci->translator);
+      if (!$validator->validate($data)) {
+          // TODO: encapsulate the communication of error messages from ServerSideValidator to the BadRequestException
+          $e = new BadRequestException();
+          foreach ($validator->errors() as $idx => $field) {
+              foreach($field as $eidx => $error) {
+                  $e->addUserMessage($error);
+              }
+          }
+          throw $e;
+      }
+
+      /** @var UserFrosting\Sprinkle\Core\Util\ClassMapper $classMapper */
+      $classMapper = $this->ci->classMapper;
+
+      // Get the ufexcel_table
+      $config = $classMapper->staticMethod('ufexcel_table', 'where', 'tableid', $data['tableid'])
+          ->first();
+
+      return $config;
+  }
+
+
+
+  public function getModalEdit($request, $response, $args)
+  {
+      // GET parameters
+      $params = $request->getQueryParams();
+
+      $ufexcelTable = $this->getUfexcelTableFromParams($params);
+
+      /** @var UserFrosting\Sprinkle\Account\Database\Models\User $currentUser */
+      $currentUser = $this->ci->currentUser;
+
+      /** @var UserFrosting\Sprinkle\Account\Authorize\AuthorizationManager $authorizer */
+      $authorizer = $this->ci->authorizer;
+
+      // Access-controlled page
+      if (!$authorizer->checkAccess($currentUser, 'ufexcel_dashboard')) {
+          throw new ForbiddenException();
+      }
+      /** @var UserFrosting\Sprinkle\Core\Util\ClassMapper $classMapper */
+      $classMapper = $this->ci->classMapper;
+
+      // Load validation rules
+      $schema = new RequestSchema('schema://requests/ufexcel-create.json');
+      $validator = new JqueryValidationAdapter($schema, $this->ci->translator);
+      $rules = $validator->rules();
+
+      return $this->ci->view->render($response, 'modals/ufexcel-config-create.html.twig', [
+        'form' => [
+            'action' => "api/ufexcel/update/{$ufexcelTable->tableid}",
+            'method' => 'PUT',
+            'submit_text' => "Update"
+        ],
+          'ufexcelconfig'  => $ufexcelTable,
+          'page'    => [
+              'validators' => [
+                'ufexcel'  => $rules
+              ]
+          ]
+      ]);
+  }
+
+
+
+
+
+
+
+  /**
+   * Processes the request to create a new ufexcel_table configuration.
+   *
+   * This route requires authentication.
+   * Request type: POST
+   * @see getModalCreate
+   */
+   public function create($request, $response, $args)
+   {
+        // Get the alert message stream
+        $ms = $this->ci->alerts;
+        // Request POST data
+        $post = $request->getParsedBody();
+        // Load the request schema
+        $schema = new RequestSchema("schema://requests/ufexcel-create.json");
+        // Whitelist and set parameter defaults
+        $transformer = new RequestDataTransformer($schema);
+
+        $data = $transformer->transform($post);
+
+        // Validate, and halt on validation errors.
+        $validator = new ServerSideValidator($schema, $this->ci->translator);
+        if (!$validator->validate($data)) {
+            $ms->addValidationErrors($validator);
+            return $response->withStatus(400);
+        }
+
+
+        /** @var UserFrosting\Sprinkle\Account\Database\Models\User $currentUser */
+        $currentUser = $this->ci->currentUser;
+
+        /** @var UserFrosting\Sprinkle\Account\Authorize\AuthorizationManager $authorizer */
+        $authorizer = $this->ci->authorizer;
+
+        // Access-controlled page
+        if (!$authorizer->checkAccess($currentUser, 'ufexcel_dashboard')) {
+            throw new ForbiddenException();
+        }
+       if ($error) {
+           return $response->withStatus(400);
+       }
+
+        /** @var UserFrosting\Sprinkle\Core\Util\ClassMapper $classMapper */
+        $classMapper = $this->ci->classMapper;
+
+        Capsule::transaction( function() use ($classMapper, $data, $ms, $config, $currentUser)
+          {
+            $newTable = $classMapper->createInstance('ufexcel_table', $data);
+
+            //save the new configuration
+            $newTable->save();
+            $ms->addMessage('success', 'New table configuration created successfully.', $data);
+          });
+
+            return $response->withStatus(200);
+    }
+
+
+
+
+
+
+
+  public function getModalCreate($request, $response, $args)
+  {
+
+      // GET parameters
+      $params = $request->getQueryParams();
+
+      /** @var UserFrosting\Sprinkle\Account\Database\Models\User $currentUser */
+      $currentUser = $this->ci->currentUser;
+
+      /** @var UserFrosting\Sprinkle\Account\Authorize\AuthorizationManager $authorizer */
+      $authorizer = $this->ci->authorizer;
+
+      // Access-controlled page
+      if (!$authorizer->checkAccess($currentUser, 'ufexcel_dashboard')) {
+          throw new ForbiddenException();
+      }
+
+      // Load validation rules
+      $schema = new RequestSchema('schema://requests/ufexcel-create.json');
+      $validator = new JqueryValidationAdapter($schema, $this->ci->translator);
+      $rules = $validator->rules();
+
+      return $this->ci->view->render($response, 'modals/ufexcel-config-create.html.twig', [
+        'form' => [
+            'action'       => 'api/ufexcel/create',
+            'submit_text'  => "Create",
+            'method'       => 'post'
+        ],
+          'page' => [
+              'validators' => [
+                'ufexcel'  => $rules
+              ]
+          ]
+      ]);
+  }
 
 /**
- * The main ufexcel config page
+ * The main ufexcel configuration page.
+ * View, edit, and create configurations.
  * This page requires authentication.
  * Request type: GET
  */
 public function pageList($request, $response, $args)
 {
+    /** @var UserFrosting\Sprinkle\Account\Database\Models\User $currentUser */
+    $currentUser = $this->ci->currentUser;
+
     /** @var UserFrosting\Sprinkle\Account\Authorize\AuthorizationManager */
     $authorizer = $this->ci->authorizer;
 
-    /** @var UserFrosting\Sprinkle\Account\Database\Models\User $currentUser */
-    $currentUser = $this->ci->currentUser;
-/*
     // Access-controlled page
-    if (!$authorizer->checkAccess($currentUser, 'uri_ufexcel')) {
+    if (!$authorizer->checkAccess($currentUser, 'ufexcel_dashboard')) {
         throw new ForbiddenException();
     }
-*/
+
     return $this->ci->view->render($response, 'pages/ufexcel-config.html.twig');
   }
+
+
+
+  public function getList($request, $response, $args)
+  {
+      // GET parameters
+      $params = $request->getQueryParams();
+
+      /** @var UserFrosting\Sprinkle\Account\Database\Models\User $currentUser */
+      $currentUser = $this->ci->currentUser;
+
+      /** @var UserFrosting\Sprinkle\Account\Authorize\AuthorizationManager $authorizer */
+      $authorizer = $this->ci->authorizer;
+
+      // Access-controlled page
+      if (!$authorizer->checkAccess($currentUser, 'ufexcel_dashboard')) {
+          throw new ForbiddenException();
+      }
+
+      /** @var UserFrosting\Sprinkle\Core\Util\ClassMapper $classMapper */
+      $classMapper = $this->ci->classMapper;
+
+      $sprunje = $classMapper->createInstance('ufexcel_sprunje', $classMapper, $params);
+
+      // Be careful how you consume this data - it has not been escaped and contains untrusted user-supplied content.
+      // For example, if you plan to insert it into an HTML DOM, you must escape it on the client side (or use client-side templating).
+      return $sprunje->toResponse($response);
+  }
+
 
 
 
@@ -63,10 +547,10 @@ public function pageList($request, $response, $args)
       /*
       * Get the site.ufexcel config
       */
-      $ufexcelConfig = $this->ci->config['site.ufexcel'];
+      $ufexcelTable = $this->ci->config['site.ufexcel'];
 
-      if (array_key_exists($tableId, $ufexcelConfig)) {
-        $config = $ufexcelConfig[$tableId];
+      if (array_key_exists($tableId, $ufexcelTable)) {
+        $config = $ufexcelTable[$tableId];
         return $config;
       }
 
@@ -80,31 +564,23 @@ public function pageList($request, $response, $args)
     public function import($request, $response, $args)
     {
 
-  // POST parameters
-        $tableId = $request->getParsedBodyParam('table');
+        $ufexcelTable = $this->getUfexcelTableFromParams($args);
 
         $uploadedFiles = $request->getUploadedFiles();
         $uploadedFile = $uploadedFiles['importFile'];
 
-        /*
-        *
-        * 1. Check if user is authorized to import.
-        * 2. Check if table has 'import' set under 'hidden', in which case import should not be allowed on this table.
-        */
-        /** @var UserFrosting\Sprinkle\Account\Authorize\AuthorizationManager */
-        $authorizer = $this->ci->authorizer;
-
         /** @var UserFrosting\Sprinkle\Account\Database\Models\User $currentUser */
         $currentUser = $this->ci->currentUser;
 
-        // Access-controlled page
-        if (!$authorizer->checkAccess($currentUser, 'import_data')) {
+        /** @var UserFrosting\Sprinkle\Account\Authorize\AuthorizationManager */
+        $authorizer = $this->ci->authorizer;
+
+        if (!$authorizer->checkAccess($currentUser, 'ufexcel_authorizer', [
+            'user'  => $currentUser,
+            'table' => $ufexcelTable,
+            'feature'   => 'import' ])) {
             throw new ForbiddenException();
-        }
-
-
-        $settings = $this->checkConfig($tableId);
-        $table = $settings['table'];
+        };
 
         /** Load $uploadedFile to a Spreadsheet Object  **/
         $spreadsheet = IOFactory::load($uploadedFile->file);
@@ -112,12 +588,6 @@ public function pageList($request, $response, $args)
         $worksheet = $spreadsheet->getActiveSheet();
 
         $rows = $worksheet->toArray();
-        Debug::debug("rows");
-        Debug::debug(print_r($rows,true));
-
-        $test = json_encode($rows);
-        Debug::debug("test");
-        Debug::debug(print_r($test,true));
 
         //Grab the header row so $rows only contains our data to be inserted
         $columns = array_shift($rows);
@@ -137,11 +607,11 @@ public function pageList($request, $response, $args)
             foreach ($data as $array => $row) {
                 $count = $count + 1;
 
-                Capsule::table($table)->insert($row);
+                Capsule::table($ufexcelTable['dbtable'])->insert($row);
                 Capsule::commit();
             }
             $ms = $this->ci->alerts;
-            $ms->addMessage('success', ('Successfully inserted ' . $count . ' records into table: ' . $table));
+            $ms->addMessage('success', ('Successfully inserted ' . $count . ' records into table: ' . $ufexcelTable['dbtable']));
 
         } catch (\Exception $e) {
             Capsule::rollback();
@@ -156,33 +626,35 @@ public function pageList($request, $response, $args)
         }
 
         return $response->withStatus(200);
-
-
     }
 
 
     public function getModalImport($request, $response, $args)
     {
-        $table = $request->getQueryParam('table');
+        // GET parameters
+        $params = $request->getQueryParams();
 
-
-        /** @var UserFrosting\Sprinkle\Account\Authorize\AuthorizationManager $authorizer */
-        $authorizer = $this->ci->authorizer;
+        $ufexcelTable = $this->getUfexcelTableFromParams($params);
 
         /** @var UserFrosting\Sprinkle\Account\Database\Models\User $currentUser */
         $currentUser = $this->ci->currentUser;
 
-        /*
-          // Access-controlled resource - check that currentUser has permission to edit "permissions" field for this role
-          if (!$authorizer->checkAccess($currentUser, 'update_role_field', [
-              'role' => $role,
-              'fields' => ['permissions']
-          ])) {
-              throw new ForbiddenException();
-          }
-        */
+        /** @var UserFrosting\Sprinkle\Account\Authorize\AuthorizationManager $authorizer */
+        $authorizer = $this->ci->authorizer;
+
+        if (!$authorizer->checkAccess($currentUser, 'ufexcel_authorizer', [
+            'user'  => $currentUser,
+            'table' => $ufexcelTable,
+            'feature'   => 'import' ])) {
+            throw new ForbiddenException();
+        };
+
         return $this->ci->view->render($response, 'modals/import.html.twig', [
-      'table' => $table
+      'form' => [
+          'action' => "api/ufexcel/import/{$ufexcelTable->tableid}",
+          'method' => 'POST',
+          'submit_text' => "Submit"
+      ],
   ]);
 }
 
@@ -190,48 +662,63 @@ public function pageList($request, $response, $args)
 
     public function getModalImportTemplate($request, $response, $args)
     {
+
         // GET parameters
-        $tableId = $request->getQueryParam('table');
+        $params = $request->getQueryParams();
+
+        $ufexcelTable = $this->getUfexcelTableFromParams($params);
 
 
-        $settings = $this->checkConfig($tableId);
-        $table = $settings['table'];
 
-        $columns = $this->getColumns($table);
+        $columns = $this->getColumns($ufexcelTable['dbtable']);
 
 
       // Remove autoincrementing and required columns from optional list.
         $optionalColumns = array_diff($columns['columns'], $columns['notNullable']);
         $requiredColumns = array_diff($columns['notNullable'], $columns['autoincrementing']);
 
+        /** @var UserFrosting\Sprinkle\Account\Database\Models\User $currentUser */
+        $currentUser = $this->ci->currentUser;
 
         /** @var UserFrosting\Sprinkle\Account\Authorize\AuthorizationManager $authorizer */
         $authorizer = $this->ci->authorizer;
 
-        /** @var UserFrosting\Sprinkle\Account\Database\Models\User $currentUser */
-        $currentUser = $this->ci->currentUser;
+        if (!$authorizer->checkAccess($currentUser, 'ufexcel_authorizer', [
+                  'user'  => $currentUser,
+                  'table' => $ufexcelTable,
+                  'feature'   => 'import' ])) {
+                  throw new ForbiddenException();
+              };
 
-        /*
-          // Access-controlled resource - check that currentUser has permission to edit "permissions" field for this role
-          if (!$authorizer->checkAccess($currentUser, 'update_role_field', [
-              'role' => $role,
-              'fields' => ['permissions']
-          ])) {
-              throw new ForbiddenException();
-          }
-        */
         return $this->ci->view->render($response, 'modals/import-template.html.twig', [
       'columns' => $optionalColumns,
       'requiredColumns' => $requiredColumns,
-      'table' => $table
-  ]);
-    }
+      'form' => [
+          'action' => "api/ufexcel/template/{$ufexcelTable->tableid}",
+          'method' => 'POST',
+          'submit_text' => "Submit"
+        ]
+     ]);
+  }
 
     public function getImportTemplate($request, $response, $args)
     {
-        $params = $request->getParsedBodyParam('columns');
+        $ufexcelTable = $this->getUfexcelTableFromParams($args);
 
-        $table = $request->getQueryParam('table');
+        $columns = $request->getParsedBodyParam('columns');
+
+        /** @var UserFrosting\Sprinkle\Account\Database\Models\User $currentUser */
+        $currentUser = $this->ci->currentUser;
+
+        /** @var UserFrosting\Sprinkle\Account\Authorize\AuthorizationManager */
+        $authorizer = $this->ci->authorizer;
+
+        if (!$authorizer->checkAccess($currentUser, 'ufexcel_authorizer', [
+            'user'  => $currentUser,
+            'table' => $ufexcelTable,
+            'feature'   => 'import' ])) {
+            throw new ForbiddenException();
+        };
 
         header("Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         header("Content-Disposition: attachment;filename=\"template.xlsx\"");
@@ -239,7 +726,7 @@ public function pageList($request, $response, $args)
 
         $spreadsheet = new Spreadsheet();
         $spreadsheet->getActiveSheet()
-    ->fromArray($params, null, 'A1');
+    ->fromArray($columns, null, 'A1');
 
         $writer = new Xlsx($spreadsheet);
         $writer->save('php://output');
@@ -253,28 +740,30 @@ public function pageList($request, $response, $args)
     public function export($request, $response, $args)
     {
 
+      // POST parameters
+      $params = $request->getParsedBody();
+
+      $ufexcelTable = $this->getUfexcelTableFromParams($args);
+
+            $tableId = $ufexcelTable['tableid'];
+            $format = $params['format'];
+            $columns = $params['columns'];
+
   /** @var UserFrosting\Sprinkle\Account\Authorize\AuthorizationManager */
         $authorizer = $this->ci->authorizer;
 
         /** @var UserFrosting\Sprinkle\Account\Database\Models\User $currentUser */
         $currentUser = $this->ci->currentUser;
 
-        // Access-controlled resource
-        if (!$authorizer->checkAccess($currentUser, 'export_data')) {
+        if (!$authorizer->checkAccess($currentUser, 'ufexcel_authorizer', [
+            'user'  => $currentUser,
+            'table' => $ufexcelTable,
+            'feature'   => 'export' ])) {
             throw new ForbiddenException();
-        }
-
-        $params = $request->getParsedBody();
-
-        $tableId = $params['table'];
-        $format = $params['format'];
-        $columns = $params['columns'];
-
-        $settings = $this->checkConfig($tableId);
-        $table = $settings['table'];
+        };
 
         //grab the data for only the selected columns
-        $data = Capsule::table($table)->select($columns)->get();
+        $data = Capsule::table($ufexcelTable['dbtable'])->select($columns)->get();
 
         //gets data into array
         $array = json_decode(json_encode($data), true);
@@ -338,7 +827,7 @@ public function pageList($request, $response, $args)
         if ($format == 'xlsx')
         {
             header("Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-            header("Content-Disposition: attachment;filename=\"$table-export.xlsx\"");
+            header("Content-Disposition: attachment;filename=\"$tableId-export.xlsx\"");
             header("Cache-Control: max-age=0");
 
             $writer = new Xlsx($spreadsheet);
@@ -411,35 +900,36 @@ public function pageList($request, $response, $args)
      **/
     public function getModalExport($request, $response, $args)
     {
+        // GET parameters
+        $params = $request->getQueryParams();
 
-    // GET parameters
-        $tableId = $request->getQueryParam("table");
+        $ufexcelTable = $this->getUfexcelTableFromParams($params);
 
-        $settings = $this->checkConfig($tableId);
         $table = $settings['table'];
 
-        $columns = $this->getColumns($table);
-
-        /** @var UserFrosting\Sprinkle\Account\Authorize\AuthorizationManager $authorizer */
-        $authorizer = $this->ci->authorizer;
+        $columns = $this->getColumns($ufexcelTable['dbtable']);
 
         /** @var UserFrosting\Sprinkle\Account\Database\Models\User $currentUser */
         $currentUser = $this->ci->currentUser;
 
-        /*
-            // Access-controlled resource - check that currentUser has permission to edit "permissions" field for this role
-            if (!$authorizer->checkAccess($currentUser, 'update_role_field', [
-                'role' => $role,
-                'fields' => ['permissions']
-            ])) {
-                throw new ForbiddenException();
-            }
-        */
+        /** @var UserFrosting\Sprinkle\Account\Authorize\AuthorizationManager $authorizer */
+        $authorizer = $this->ci->authorizer;
+
+        if (!$authorizer->checkAccess($currentUser, 'ufexcel_authorizer', [
+        'user'  => $currentUser,
+        'table' => $ufexcelTable,
+        'feature'   => 'export' ])) {
+        throw new ForbiddenException();
+    };
+
         return $this->ci->view->render($response, 'modals/export.html.twig', [
+        'form' => [
+              'action' => "api/ufexcel/export/{$ufexcelTable->tableid}",
+              'method' => 'POST',
+              'submit_text' => "Submit"
+          ],
         'columns' => $columns['columns'],
-        'notNullable' => $columns['notNullable'],
-        'model' => $model,
-        'table' => $table
+        'notNullable' => $columns['notNullable']
     ]);
     }
 }

@@ -1,12 +1,19 @@
 {# Tool menu for table panels #}
+
+{% block stylesheets_page %}
+
+    {{ assets.css('css/ufexcel') | raw }}
+    
+{% endblock %}
+
 <div class="box-tools pull-right">
+
     <div class="btn-group">
         <button type="button" class="btn btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
           <i class="fa fa-bars"></i> <span class="caret"></span>
         </button>
         <ul class="dropdown-menu box-tool-menu">
 {% block ufexcel_buttons %}
-{% if checkAccess('import_data') %}
             <li class='ufexcel-import'>
               <a href="#" class="js-ufexcel-import-template">
                   <i class="fa fa-table fa-fw"></i> Generate Template
@@ -17,14 +24,11 @@
                   <i class="fa fa-upload fa-fw"></i> Import
               </a>
             </li>
-{% endif %}
-{% if checkAccess('export_data') %}
           <li class='ufexcel-export'>
             <a href="#" class="js-ufexcel-export">
                 <i class="fa fa-download fa-fw"></i> Export
             </a>
           </li>
-{% endif %}
             <li>
                 <a href="#" class="js-uf-table-download">
                     <i class="fa fa-table fa-fw"></i> {{ translate("DOWNLOAD.CSV") }}

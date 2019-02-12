@@ -1,0 +1,9 @@
+{
+	"users": {
+		"validators": {
+			"array": {
+				"message": "VALIDATE.ARRAY"
+			}
+		}
+	}
+}

@@ -9,6 +9,7 @@ namespace UserFrosting\Sprinkle\Ufexcel\Database\Migrations\v400;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Schema\Builder;
 use UserFrosting\System\Bakery\Migration;
+use UserFrosting\Sprinkle\Ufexcel\Database\Models\UfexcelTable;
 
 /**
  *
@@ -34,6 +35,29 @@ class UfexcelTables extends Migration
                 $table->collation = 'utf8_unicode_ci';
                 $table->charset = 'utf8';
             });
+            // Add default UserFrosting tables
+            $tables = [
+                'table-activities' => new UfexcelTable([
+                    'tableid' => 'table-activities',
+                    'dbtable' => 'activities'
+                ]),
+                'table-groups' => new UfexcelTable([
+                    'tableid' => 'table-groups',
+                    'dbtable' => 'groups'
+                ]),
+                'table-roles' => new UfexcelTable([
+                    'tableid' => 'table-roles',
+                    'dbtable' => 'roles'
+                ]),
+                'table-users' => new UfexcelTable([
+                    'tableid' => 'table-users',
+                    'dbtable' => 'users'
+                ])
+            ];
+
+            foreach ($tables as $table => $ufexcelTable) {
+                $ufexcelTable->save();
+            }
         }
     }
 

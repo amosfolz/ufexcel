@@ -1,0 +1,10 @@
+{
+  "tableid": {
+    "validators": {
+      "required": {
+        "label": "tableid",
+        "message": "VALIDATE.REQUIRED"
+      }
+    }
+  }
+}

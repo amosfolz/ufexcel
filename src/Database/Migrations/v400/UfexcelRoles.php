@@ -54,15 +54,10 @@ class UfExcelRoles extends Migration
     {
         return [
             new Role([
-                'slug'        => 'import',
-                'name'        => 'Import',
-                'description' => 'This role allows user to import data.'
-            ]),
-            new Role([
-                'slug'        => 'export',
-                'name'        => 'Export',
-                'description' => 'This role allows user to export data.'
-            ]),
+                'slug'        => 'ufexcel_admin',
+                'name'        => 'UFExcel Administrator',
+                'description' => 'This role grants access to UFExcel dashboard and all administrative features.'
+            ])
         ];
     }
 }

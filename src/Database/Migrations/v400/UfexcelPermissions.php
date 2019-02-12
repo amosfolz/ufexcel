@@ -39,7 +39,9 @@ class UfExcelPermissions extends Migration
         {
             foreach ($this->getPermissions() as $permissionInfo) {
                 $permission = Permission::where('slug', $permissionInfo['slug'])->first();
+                if($permission != null){
                 $permission->delete();
+              }
             }
         }
 
@@ -54,17 +56,17 @@ class UfExcelPermissions extends Migration
                   'export'      => Role::where('slug', 'export')->first()->id
               ];
               return [
-                  'import_data' => new Permission([
-                      'slug'        => 'import_data',
-                      'name'        => 'Import data',
+                  'ufexcel_dashboard' => new Permission([
+                      'slug'        => 'ufexcel_dashboard',
+                      'name'        => 'UFExcel Dashboard',
                       'conditions'  => 'always()',
-                      'description' => 'Import data into database using UfExcel Import.'
+                      'description' => 'View and manage UFExcel through the dashboard.'
                   ]),
-                  'export_data' => new Permission([
-                      'slug'        => 'export_data',
-                      'name'        => 'Export data',
-                      'conditions'  => 'always()',
-                      'description' => 'Export data from database using UfExcel Export.'
+                  'ufexcel_authorizer' => new Permission([
+                      'slug'        => 'ufexcel_authorizer',
+                      'name'        => 'UfExcel Authorizer',
+                      'conditions'  => 'ufexcel_authorizer(user.id,table.id,feature)',
+                      'description' => 'Main UFExcel authorization component.'
                   ])
               ];
           }
@@ -92,16 +94,10 @@ class UfExcelPermissions extends Migration
            */
           protected function syncPermissionsRole($permissions)
           {
-              $roleImport = Role::where('slug', 'import')->first();
-              if ($roleImport) {
-                  $roleImport->permissions()->sync([
-                      $permissions['import_data']->id
-                  ]);
-              }
-              $roleExport = Role::where('slug', 'export')->first();
-              if ($roleExport) {
-                  $roleExport->permissions()->sync([
-                      $permissions['export_data']->id
+              $ufexcelAdmin = Role::where('slug', 'ufexcel_admin')->first();
+              if ($ufexcelAdmin) {
+                  $ufexcelAdmin->permissions()->sync([
+                      $permissions['ufexcel_dashboard']->id
                   ]);
               }
           }

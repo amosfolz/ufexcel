@@ -1,4 +1,47 @@
 
+
+$(document).ready(function() {
+
+  //Check each table on the page against the configuration in site.ufexcel_tables.
+    $('table').each(function() {
+        var table_id =  $(this).attr('id');
+
+        //Get the parent div
+        var div = $(this).parents().closest('div[id]');
+
+        // menu options for that table
+        var options = div.children().find("[class^=ufexcel]");
+
+
+            $.ajax({
+    type: 'GET',
+    url : site.uri.public + '/api/ufexcel/features/' + table_id,
+    success: function(data){
+      response = data;
+
+
+      if (response != null && response.features.import === true)
+         {
+            $('li.ufexcel-import').show();
+            $('li.ufexcel-template').show();
+          }
+
+      if (response != null && response.features.export === true)
+          {
+             $('li.ufexcel-export').show();
+          }
+        }
+      });
+    });
+  });
+
+
+
+
+
+
+
+
 function attachImportForm(table_id) {
 $("body").on('renderSuccess.ufModal', function (data) {
 
@@ -77,13 +120,7 @@ $(document).ready(function() {
       $('.modal').modal('hide');
   } );
 
-
-
-
-
-
-
-
+/*
 //Check each table on the page against the configuration in site.ufexcel_tables.
 var all_tables = $('table').each(function() {
 
@@ -108,13 +145,10 @@ var options = div.children().find("[class^=ufexcel]");
             $('li.ufexcel-import').show();
             $('li.ufexcel-template').show();
           }
-          /*
-          if (!(hidden.includes('template'))){
-            $('li.ufexcel-template').show();
-          }
-          */
  }
 });
+
+*/
 
 
 
@@ -125,7 +159,7 @@ $('.js-ufexcel-export').click(function() {
   $("body").ufModal({
   sourceUrl: site.uri.public + "/modals/ufexcel/export",
   ajaxParams: {
-        table : table_id
+        tableid : table_id
      },
   msgTarget: $("#alerts-page")
       });
@@ -140,7 +174,7 @@ $('.js-ufexcel-export').click(function() {
       $("body").ufModal({
       sourceUrl: site.uri.public + "/modals/ufexcel/import/template",
       ajaxParams: {
-          table : table_id
+          tableid : table_id
          },
       msgTarget: $("#alerts-page")
           });
@@ -156,7 +190,7 @@ $('.js-ufexcel-export').click(function() {
      $("body").ufModal({
       sourceUrl: site.uri.public + "/modals/ufexcel/import",
       ajaxParams: {
-          table : table_id
+          tableid : table_id
          },
       msgTarget: $("#alerts-page")
           });

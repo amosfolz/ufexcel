@@ -1,0 +1,56 @@
+{% extends "pages/abstract/dashboard.html.twig" %}
+
+{% block stylesheets_page %}
+    <!-- Page-specific CSS asset bundle -->
+    {{ assets.css('css/form-widgets') | raw }}
+
+
+{% endblock %}
+
+{# Overrides blocks in head of base template #}
+{% block page_title %}UfExcel Configuration{% endblock %}
+
+{% block page_description %}{% endblock %}
+
+{% block body_matter %}
+    <div class="row">
+        <div class="col-md-12">
+            <div id="widget-ufexcel" class="box box-primary">
+                <div class="box-header">
+                    <h3 class="box-title"><i class="fa fa-fw fa-cog"></i>Table Settings </h3>
+                    {% include "tables/table-tool-menu.html.twig" %}
+                </div>
+                <div class="box-body">
+                    {% include "tables/ufexcel-config.html.twig" with {
+                            "table" : {
+                                "id" : "table-ufexcel-config"
+                            }
+                        }
+                    %}
+                </div>
+                <div class="box-footer">
+                    <button class="btn btn-success js-ufexcel-create" data-toggle="modal" data-formUrl="/modals/ufexcel/create">New</button>
+                </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+{% block scripts_page %}
+    {{ assets.js('js/form-widgets') | raw }}
+
+    {{ assets.js('js/pages/ufexcel-config') | raw }}
+
+    <!-- Include validation rules!! -->
+    <script>
+    {% include "pages/partials/page.js.twig" %}
+    </script>
+
+    <script>
+        $(document).ready(function(){
+            console.log("Script working properly");
+        });
+    </script>
+
+{% endblock %}

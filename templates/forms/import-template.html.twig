@@ -1,7 +1,7 @@
 <!-- forms/import-template.html.twig -->
 
 
-<form class="js-form" id="import-template" action="{{site.uri.public}}/api/ufexcel/template" method="post">
+<form class="js-form" id="import-template" action="{{site.uri.public}}/{{form.action}}" method="{{form.method}}">
   {% include "forms/csrf.html.twig" %}
 
   <div class="box-body">
@@ -21,7 +21,6 @@
 <thead>
 <tr><th> Select additional columns to include in template:</th></tr>
 </thead>
-  <input type="hidden" name="table" value="{{table}}">
 <tbody>
     {% for column in columns %}
 <tr class="uf-collection-row">
@@ -37,7 +36,7 @@
 </table>
 <div class="row">
   <div class="col-xs-6">
-      <button type="submit" class="btn btn-primary btn-block btn-flat">Generate</button>
+      <button type="submit" class="btn btn-primary btn-block btn-flat">{{form.submit_text}}</button>
   </div>
   <div class="col-xs-4">
     <button type="button" class="btn btn-block btn-lg btn-link" data-dismiss="modal">{{translate("CANCEL")}}</button>

@@ -12,7 +12,7 @@ use Illuminate\Database\Capsule\Manager as Capsule;
 /**
  * Route Class
 */
-class UfexcelTables extends Model {
+class UfexcelTable extends Model {
 
 
 
@@ -21,9 +21,15 @@ class UfexcelTables extends Model {
      */
     protected $table = 'ufexcel_tables';
 
-
-
     public $timestamps = true;
+
+    protected $fillable = [
+        'id',
+        'tableid',
+        'dbtable'
+    ];
+
+
 
     /**
      * Get all of the owning models.
@@ -39,10 +45,17 @@ class UfexcelTables extends Model {
         /** @var UserFrosting\Sprinkle\Core\Util\ClassMapper $classMapper */
         $classMapper = static::$ci->classMapper;
 
-        return $this->belongsToMany($classMapper->getClassMapping('users'), 'ufexcel_users', 'ufexcel_id', 'user_id')->withPivot('import', 'export');
+        return $this->belongsToMany($classMapper->getClassMapping('user'), 'ufexcel_users', 'table_id', 'user_id')->withPivot('import', 'export')->withTimestamps();
     }
 
-
+    public function scopeForUsers($query, $userId)
+    {
+        return $query->join('ufexcel_users', function ($join) use ($userId) {
+            $join->on('ufexcel_users.table_id', 'ufexcel_tables.id')
+                 ->where('user_id', $userId)
+                 ->join('users', 'ufexcel_users.user_id', '=', 'users.id');
+        });
+    }
 
 
 

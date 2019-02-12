@@ -1,0 +1,30 @@
+{
+	"tableid": {
+		"validators": {
+			"required": {
+				"label": "Table ID",
+				"message": "Table ID is required."
+			},
+			"length": {
+				"label": "Table ID",
+				"min": 1,
+				"max": 30,
+				"message": "Must be between {{min}} and {{max}} characters."
+			}
+		}
+	},
+	"dbtable": {
+		"validators": {
+			"required": {
+				"label": "Database Table",
+				"message": "Database Table is required."
+			},
+			"length": {
+				"label": "Database Table",
+				"min": 1,
+				"max": 30,
+				"message": "Must be between {{min}} and {{max}} characters."
+			}
+		}
+	}
+}
