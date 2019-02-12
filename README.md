@@ -102,8 +102,15 @@ Following the instructions at [this link](https://learn.userfrosting.com/recipes
 ```
 
 
+#### Adding to custom tables
 
-
+To add to additional tables, include `js/widgets/ufexcet` asset-bundle.
+```
+{% block scripts_page %}
+    {# Add ufexcel widget #}
+    {{ assets.js('js/widgets/ufexcel') | raw }}
+{% endblock %}
+```
 
 
 
